@@ -603,7 +603,7 @@ async function pushCloud(){
     const content=b64enc(payload);
     await ghApi('data.json','PUT',{message:'FON sync '+new Date().toLocaleString(),content,sha:sha||undefined});
     c.lastSync=Date.now(); setCfg(c); setSync('ok','已同步 · '+timeAgo(c.lastSync));
-  }catch(e){ setSync('err','同步失败：'+(e.message||e)); }
+  }catch(e){ setSync('err','同步失败：'+friendlyErr(e)); console.error('pushCloud',e); }
 }
 async function pullCloud(){
   const c=getCfg();
@@ -621,7 +621,27 @@ async function pullCloud(){
     store=data; save(); render();
     c.lastSync=Date.now(); setCfg(c); setSync('ok','已同步 · '+timeAgo(c.lastSync));
     toast('已从云端拉取最新数据');
-  }catch(e){ setSync('err','拉取失败：'+(e.message||e)); }
+  }catch(e){ setSync('err','拉取失败：'+friendlyErr(e)); console.error('pullCloud',e); }
+}
+function friendlyErr(e){
+  const m=(e&&e.message)||String(e);
+  if(/401/.test(m)) return '令牌无效或权限不足（请检查 PAT 是否正确、是否勾选了 repo 权限）';
+  if(/403/.test(m)) return 'GitHub 拒绝（可能限流，或令牌权限不足）';
+  if(/404/.test(m)) return '找不到仓库/文件（请检查 用户名、仓库名、分支 是否填对）';
+  if(/Failed to fetch|NetworkError|load failed|timeout/i.test(m)) return '网络连不上 GitHub（国内常因 api.github.com 被墙/不稳定；可换网络或用 Gitee 同步）';
+  if(/Cannot read|undefined/i.test(m)) return '浏览器环境不支持（请确认用的是 github.io 链接并已强制刷新）';
+  return m;
+}
+async function testConn(){
+  const c=getCfg();
+  if(!c.token){ toast('请先在上方填写 Token'); return; }
+  setSync('sync','连接测试中…');
+  try{
+    const r=await fetch('https://api.github.com/user',{headers:{'Authorization':'Bearer '+c.token,'Accept':'application/vnd.github+json','User-Agent':'fon'}});
+    const j=await r.json().catch(()=>({}));
+    if(r.ok) setSync('ok','连接正常：'+j.login);
+    else setSync('err','连接失败：'+(j.message||r.status));
+  }catch(e){ setSync('err','连接失败：'+friendlyErr(e)); console.error('testConn',e); }
 }
 async function initSync(){
   const c=getCfg();
@@ -653,8 +673,9 @@ function openSyncSettings(){
     <button class="pill-btn" onclick="syncSaveSettings()">保存设置</button>
   </div>
   <div style="display:flex;gap:8px;margin-top:10px">
-    <button class="pill-btn ghost" style="flex:1;justify-content:center" onclick="pushCloud();toast('正在上传…')">⬆ 上传当前数据到云</button>
-    <button class="pill-btn ghost" style="flex:1;justify-content:center" onclick="pullCloud()">⬇ 从云下载</button>
+    <button class="pill-btn ghost" style="flex:1;justify-content:center" onclick="testConn()">🔍 测试连接</button>
+    <button class="pill-btn ghost" style="flex:1;justify-content:center" onclick="pushCloud();toast('正在上传…')">⬆ 上传</button>
+    <button class="pill-btn ghost" style="flex:1;justify-content:center" onclick="pullCloud()">⬇ 下载</button>
   </div>`;
   $('#modalMask').classList.add('show');
   const fi=box.querySelector('input'); if(fi) setTimeout(()=>fi.focus(),100);
