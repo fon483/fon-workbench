@@ -582,13 +582,15 @@ let _pushTimer=null;
 function schedulePush(){ const c=getCfg(); if(!c||!c.auto) return; clearTimeout(_pushTimer); _pushTimer=setTimeout(pushCloud,700); }
 async function ghApi(path, method, body){
   const c=getCfg();
-  const q = method==='GET' ? (c.branch?'?ref='+encodeURIComponent(c.branch):'') : (c.branch?'?branch='+encodeURIComponent(c.branch):'');
-  const url='https://api.github.com/repos/'+encodeURIComponent(c.owner)+'/'+encodeURIComponent(c.repo)+'/contents/'+path+q;
-  const headers={'Accept':'application/vnd.github+json','Authorization':'Bearer '+c.token,'X-GitHub-Api-Version':'2022-11-28','Content-Type':'application/json'};
+  const q = new URLSearchParams();
+  q.set('access_token', c.token);
+  if(c.branch) q.set(method==='GET'?'ref':'branch', c.branch);
+  const url='https://gitee.com/api/v5/repos/'+encodeURIComponent(c.owner)+'/'+encodeURIComponent(c.repo)+'/contents/'+path+'?'+q.toString();
+  const headers={'Accept':'application/json','Content-Type':'application/json'};
   const opt={method,headers}; if(body!==undefined) opt.body=JSON.stringify(body);
   const r=await fetch(url,opt);
   if(r.status===404) return {notfound:true};
-  if(!r.ok){ let m=''; try{m=(await r.json()).message;}catch(e){} throw new Error(m||('GitHub '+r.status)); }
+  if(!r.ok){ let m=''; try{m=(await r.json()).message;}catch(e){} throw new Error(m||('Gitee '+r.status)); }
   return r.json();
 }
 async function pushCloud(){
@@ -613,7 +615,7 @@ async function pullCloud(){
     const cur=await ghApi('data.json','GET');
     if(cur.notfound){ setSync('ok','云端暂无数据'); return; }
     let raw=b64dec(cur.content);
-    if(raw.startsWith('ENC1:')){
+    if(raw.startsWith('ENC1:')||raw.startsWith('ENC2:')){
       if(!c.pass){ throw new Error('云端数据已加密，请在「同步设置」中填写加密密码'); }
       raw=await decryptText(raw, c.pass);
     }
@@ -625,11 +627,11 @@ async function pullCloud(){
 }
 function friendlyErr(e){
   const m=(e&&e.message)||String(e);
-  if(/401/.test(m)) return '令牌无效或权限不足（请检查 PAT 是否正确、是否勾选了 repo 权限）';
-  if(/403/.test(m)) return 'GitHub 拒绝（可能限流，或令牌权限不足）';
+  if(/401|unauthorized|token/i.test(m)) return '令牌无效或权限不足（请检查令牌是否正确、是否勾选了 projects 权限）';
+  if(/403|rate/i.test(m)) return 'Gitee 拒绝（可能限流，或令牌权限不足）';
   if(/404/.test(m)) return '找不到仓库/文件（请检查 用户名、仓库名、分支 是否填对）';
-  if(/Failed to fetch|NetworkError|load failed|timeout/i.test(m)) return '网络连不上 GitHub（国内常因 api.github.com 被墙/不稳定；可换网络或用 Gitee 同步）';
-  if(/Cannot read|undefined/i.test(m)) return '浏览器环境不支持（请确认用的是 github.io 链接并已强制刷新）';
+  if(/Failed to fetch|NetworkError|load failed|timeout/i.test(m)) return '网络连不上 Gitee（请确认网络可访问 gitee.com）';
+  if(/Cannot read|undefined/i.test(m)) return '浏览器环境不支持（请确认用的是在线链接并已强制刷新）';
   return m;
 }
 async function testConn(){
@@ -637,7 +639,7 @@ async function testConn(){
   if(!c.token){ toast('请先在上方填写 Token'); return; }
   setSync('sync','连接测试中…');
   try{
-    const r=await fetch('https://api.github.com/user',{headers:{'Authorization':'Bearer '+c.token,'Accept':'application/vnd.github+json','User-Agent':'fon'}});
+    const r=await fetch('https://gitee.com/api/v5/user?access_token='+encodeURIComponent(c.token),{headers:{'Accept':'application/json','User-Agent':'fon'}});
     const j=await r.json().catch(()=>({}));
     if(r.ok) setSync('ok','连接正常：'+j.login);
     else setSync('err','连接失败：'+(j.message||r.status));
@@ -653,17 +655,17 @@ async function initSync(){
 function openSyncSettings(){
   const c=getCfg();
   const box=$('#modalBox');
-  box.innerHTML=`<h3>☁️ 云同步设置（GitHub）</h3>
+  box.innerHTML=`<h3>☁️ 云同步设置（Gitee 码云）</h3>
   <div class="save-hint" style="text-align:left;margin:4px 0 12px;line-height:1.7">
-    数据同步到你的 GitHub 仓库（<b>data.json</b>），手机与电脑登录同一仓库即互通。<br>
-    需准备：① 一个 GitHub 仓库（公开，免费版 Pages 不支持私有仓库）② 一个仅授权该仓库的 <b>PAT</b>。担心隐私请填写下方「加密密码」。
+    数据同步到你的 Gitee 仓库（<b>data.json</b>），手机与电脑登录同一仓库即互通。<br>
+    国内直连、免费、<b>无需开魔法</b>。担心隐私请填写下方「加密密码」，云端数据将以密文保存。
   </div>
-  <div class="field"><label>GitHub 用户名 / 组织名</label><input id="sc_owner" value="${esc(c.owner||'')}" placeholder="如 octocat"></div>
+  <div class="field"><label>Gitee 用户名</label><input id="sc_owner" value="${esc(c.owner||'')}" placeholder="如 fon483"></div>
   <div class="field"><label>仓库名</label><input id="sc_repo" value="${esc(c.repo||'')}" placeholder="如 fon-workbench"></div>
-  <div class="field"><label>分支</label><input id="sc_branch" value="${esc(c.branch||'main')}" placeholder="main"></div>
-  <div class="field"><label>Access Token（PAT）</label><input id="sc_token" type="password" value="${esc(c.token||'')}" placeholder="ghp_... 或 github_pat_..."></div>
+  <div class="field"><label>分支</label><input id="sc_branch" value="${esc(c.branch||'master')}" placeholder="master"></div>
+  <div class="field"><label>Gitee 私人令牌</label><input id="sc_token" type="password" value="${esc(c.token||'')}" placeholder="gitee 私人令牌"></div>
   <div class="field"><label>加密密码（强烈推荐）</label><input id="sc_pass" type="password" value="${esc(c.pass||'')}" placeholder="设一个密码，云端数据将加密存储"></div>
-  <div class="save-hint" style="font-size:11px;margin:-4px 0 2px;color:var(--muted)">⚠️ 免费版 GitHub Pages 不支持私有仓库，故仓库是公开的。填写此密码后，云端 <b>data.json</b> 会以密文保存，他人即使看到也只是乱码。密码仅存你本机，<b>忘了将无法恢复数据</b>。</div>
+  <div class="save-hint" style="font-size:11px;margin:-4px 0 2px;color:var(--muted)">⚠️ 仓库默认公开，填写此密码后，云端 <b>data.json</b> 会以密文保存，他人即使看到也只是乱码。密码仅存你本机，<b>忘了将无法恢复数据</b>。</div>
   <div class="field" style="display:flex;align-items:center;gap:8px">
     <input type="checkbox" id="sc_auto" ${c.auto?'checked':''} style="width:16px;height:16px;accent-color:var(--pink-deep)">
     <label style="margin:0">自动同步（本地改动后自动上传到云）</label>
@@ -684,7 +686,7 @@ function syncSaveSettings(){
   const c={
     owner:$('#sc_owner').value.trim(),
     repo:$('#sc_repo').value.trim(),
-    branch:$('#sc_branch').value.trim()||'main',
+    branch:$('#sc_branch').value.trim()||'master',
     token:$('#sc_token').value.trim(),
     pass:$('#sc_pass').value,
     auto:$('#sc_auto').checked,
