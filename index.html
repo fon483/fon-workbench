@@ -476,9 +476,9 @@ function seed(){
       {id:uid(),title:'React 性能优化要点',content:'1. useMemo/useCallback 避免重复计算\n2. 列表加 key\n3. 懒加载路由\n4. 虚拟滚动处理长列表',cat:'学习',created:y1,updated:y1}
     ],
     talents:[
-      {id:uid(),name:'小鹿爱穿搭',platform:'抖音',type:'达播',contact:'wx: xiaolu_daren88',fans:'128万',fansTime:t,price:'直播坑位费 ¥8000 / 场',org:'星光传媒 · 对接人：宁姐',status:'合作中',note:'风格偏甜美穿搭，直播转化率高，档期需提前两周约，不接美妆外品类。',created:t},
-      {id:uid(),name:'老张评车',platform:'快手',type:'短视频',contact:'13800138000',fans:'56万',fansTime:y1,price:'单条视频 ¥5000',org:'个人 · 直接对接',status:'已合作',note:'汽车垂类，粉丝男性占比80%，上次合作播放量120w，配合度好。',created:y1},
-      {id:uid(),name:'一口甜甜圈',platform:'视频号',type:'短视频',contact:'wx: ttq2023',fans:'23万',fansTime:y2,price:'单条视频 ¥2500',org:'',status:'未合作',note:'美食探店类，画风清新，报价可谈。',created:y2}
+      {id:uid(),name:'小鹿爱穿搭',platform:'抖音',platformId:'xiaolu_chuanda',type:'达播',contact:'wx: xiaolu_daren88',fans:'128万',fansTime:t,price:'直播坑位费 ¥8000 / 场',org:'星光传媒 · 对接人：宁姐',status:'合作中',note:'风格偏甜美穿搭，直播转化率高，档期需提前两周约，不接美妆外品类。',created:t},
+      {id:uid(),name:'老张评车',platform:'快手',platformId:'laozhangpingche',type:'短视频',contact:'13800138000',fans:'56万',fansTime:y1,price:'单条视频 ¥5000',org:'个人 · 直接对接',status:'已合作',note:'汽车垂类，粉丝男性占比80%，上次合作播放量120w，配合度好。',created:y1},
+      {id:uid(),name:'一口甜甜圈',platform:'视频号',platformId:'yikoutiantianquan',type:'短视频',contact:'wx: ttq2023',fans:'23万',fansTime:y2,price:'单条视频 ¥2500',org:'',status:'未合作',note:'美食探店类，画风清新，报价可谈。',created:y2}
     ],
     eng:{
       words:[
@@ -1245,7 +1245,7 @@ function renderTalentList(){
       if(state.talFans==='50-100万') return n>=50&&n<100;
       return n>=100; });
   }
-  if(kw) list=list.filter(x=>(x.name+' '+x.contact+' '+x.platform+' '+x.type+' '+x.status+' '+(x.org||'')+' '+(x.note||'')).toLowerCase().includes(kw));
+  if(kw) list=list.filter(x=>(x.name+' '+(x.platformId||'')+' '+x.contact+' '+x.platform+' '+x.type+' '+x.status+' '+(x.org||'')+' '+(x.note||'')).toLowerCase().includes(kw));
   if(state.talSort==='fans') list.sort((a,b)=>fansNum(b.fans)-fansNum(a.fans));
   else if(state.talSort==='status'){ const o={'合作中':0,'已合作':1,'未合作':2}; list.sort((a,b)=>o[a.status]-o[b.status]); }
   else list.sort((a,b)=>(b.created||'').localeCompare(a.created||''));
@@ -1297,6 +1297,7 @@ function renderTalentList(){
         </div>
       </div>
       <div class="tal-info">
+        ${infoRow('平台账号', x.platformId, '', x.platformId)}
         ${infoRow('联系方式', x.contact, '', x.contact)}
         ${infoRow('粉丝量级', x.fans, x.fansTime?('数据更新于 '+x.fansTime):'', '')}
         ${infoRow('合作报价', x.price, '', x.price)}
@@ -1347,7 +1348,7 @@ function parseTalentText(text){
   const blocks = text.split(/\n\s*\n+/).map(b=>b.trim()).filter(Boolean);
   const results = [];
   for(const b of blocks){
-    const t = {name:'',platform:'',type:'',contact:'',fans:'',price:'',org:'',note:'',status:'未合作'};
+    const t = {name:'',platform:'',platformId:'',type:'',contact:'',fans:'',price:'',org:'',note:'',status:'未合作'};
     if(/抖音/.test(b)) t.platform='抖音'; else if(/快手/.test(b)) t.platform='快手'; else if(/视频号/.test(b)) t.platform='视频号';
     if(/达播|直播/.test(b)) t.type='达播'; else if(/短视频|视频/.test(b)) t.type='短视频';
     const wx = b.match(/(?:微信|vx|wx|V信|weixin)[号:：\s]*([a-zA-Z][\w-]{4,19})/i);
@@ -1355,13 +1356,16 @@ function parseTalentText(text){
     t.contact = [wx?('wx: '+wx[1]):'', tel?tel[0]:''].filter(Boolean).join(' / ');
     const fans = b.match(/(?:粉丝|粉)[量级:：\s]*([\d.]+)\s*([万wW千kK]?)/) || b.match(/([\d.]+)\s*([万wW])\s*粉/);
     if(fans){ const u = /千|k/i.test(fans[2]) ? (parseFloat(fans[1])/10)+'万' : fans[1]+'万'; t.fans = u; t.fansTime = today(); }
+    const platformId = b.match(/(?:抖音号|快手号|视频号|账号号|账号|ID|id)[号:：\s]*([a-zA-Z0-9_\-]{2,30})/);
+    if(platformId) t.platformId = platformId[1];
     const price = b.match(/(?:报价|坑位费|单条|一条|费用)[^\d]{0,6}([\d.]+\s*[万元kw]*)/i);
     if(price) t.price = price[0].replace(/\s+/g,'');
     const org = b.match(/(?:机构|公会|MCN|传媒|对接人?)[:：\s]*([^\s,，。;；]{2,15})/);
     if(org) t.org = org[0].replace(/\s+/g,'');
     /* 昵称：取首行去掉已识别的关键词部分 */
     const firstLine = b.split('\n')[0];
-    let name = firstLine.replace(/(?:微信|vx|wx|weixin)[号:：\s]*[a-zA-Z][\w-]{4,19}/ig,'')
+    let name = firstLine.replace(/(?:抖音号|快手号|视频号|账号号|账号|ID|id)[号:：\s]*[a-zA-Z0-9_\-]{2,30}/ig,'')
+      .replace(/(?:微信|vx|wx|weixin)[号:：\s]*[a-zA-Z][\w-]{4,19}/ig,'')
       .replace(/1[3-9]\d{9}/g,'').replace(/(?:粉丝|粉)[量级:：\s]*[\d.]+\s*[万wW千kK]?/g,'')
       .replace(/[\d.]+\s*[万wW]\s*粉/g,'').replace(/(?:报价|坑位费|单条|一条|费用)[^\d]{0,6}[\d.]+\s*[万元kw]*/ig,'')
       .replace(/抖音|快手|视频号|达播|短视频|直播/g,'').replace(/[,，。;；:：|/\\-]+/g,' ').trim().split(/\s+/)[0]||'';
@@ -1458,7 +1462,7 @@ function showParsePreview(list, title){
             ${dup?'<span class="tag tag-mid">疑似重复</span>':''}
           </div>
           <div class="pv-meta">
-            ${t.contact?('联系：'+esc(t.contact)+' · '):''}${t.fans?('粉丝：'+esc(t.fans)+' · '):''}${t.price?('报价：'+esc(t.price)+' · '):''}${t.org?('机构：'+esc(t.org)+' · '):''}${t.note?('备注：'+esc(t.note)):''}
+            ${t.platformId?('平台号：'+esc(t.platformId)+' · '):''}${t.contact?('联系：'+esc(t.contact)+' · '):''}${t.fans?('粉丝：'+esc(t.fans)+' · '):''}${t.price?('报价：'+esc(t.price)+' · '):''}${t.org?('机构：'+esc(t.org)+' · '):''}${t.note?('备注：'+esc(t.note)):''}
           </div>
         </div>
       </div>`;
@@ -1488,6 +1492,7 @@ function confirmImport(){
 const TAL_FIELDS = [
   {k:'name',l:'达人昵称',t:'text',req:1},
   {k:'platform',l:'所属平台',t:'select',opts:['抖音','快手','视频号']},
+  {k:'platformId',l:'平台账号号/ID（抖音号/快手号/视频号ID）',t:'text'},
   {k:'type',l:'账号类型',t:'select',opts:['达播','短视频']},
   {k:'contact',l:'联系方式（微信号/手机号）',t:'text'},
   {k:'fans',l:'粉丝量级（如 128万）',t:'text'},
@@ -1512,6 +1517,7 @@ function viewTalent(id){
   const t = store.talents.find(x=>x.id===id); if(!t) return;
   openView('👤 '+t.name,
 `平台：${t.platform||'-'}　类型：${t.type||'-'}　状态：${t.status||'-'}
+平台账号号/ID：${t.platformId||'-'}
 联系方式：${t.contact||'-'}
 粉丝量级：${t.fans||'-'}${t.fansTime?('（更新于 '+t.fansTime+'）'):''}
 合作报价：${t.price||'-'}
