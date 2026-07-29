@@ -533,7 +533,6 @@ function seed(){
 }
 store = load() || seed();
 if(!store.talents) store.talents = seed().talents; /* 旧数据迁移 */
-if(!Array.isArray(store.navOrder)) store.navOrder = Object.keys(MODS); /* 导航排序默认值 */
 save();
 loadHotLocal();   /* 带货情报本地兜底（云端会在 initSync 拉取覆盖） */
 
