@@ -371,6 +371,32 @@ mark{background:#ffe9a8;color:#8a6d1a;border-radius:4px;padding:0 2px}
 @media (min-width:1200px){
   .content{max-width:1080px}
 }
+/* ===== 带货情报模块 ===== */
+.banner-actions{display:flex;gap:8px;align-items:center;flex:1;min-width:0}
+.banner-actions .pill-btn.ghost{padding:8px 12px;white-space:nowrap}
+.mini-sel{height:34px;border:1px solid var(--border);border-radius:8px;padding:0 10px;background:var(--card);color:var(--text);font-size:13px;outline:none}
+.mini-sel:focus{border-color:var(--primary)}
+.tag-douyin{background:#fde8ef;color:#e84393;border-color:#f8d3e2}
+.tag-kuaishou{background:#fff3e0;color:#ff7a18;border-color:#ffe0b2}
+.tag-shipinhao{background:#e8f4ff;color:#2b7fa0;border-color:#cfe6f5}
+.hot-card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px 16px;margin-bottom:12px;transition:.2s}
+.hot-card:hover{box-shadow:0 6px 18px rgba(94,180,214,.14);transform:translateY(-1px)}
+.hot-top{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.hot-badge{background:linear-gradient(120deg,#ff7a59,#ff4d6d);color:#fff;font-size:11px;padding:2px 8px;border-radius:20px;margin-left:6px}
+.hot-title{font-size:16px;font-weight:700;color:var(--text);margin:8px 0 2px}
+.hot-acc{font-size:12.5px;color:var(--muted);margin-bottom:6px}
+.hot-stats{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0 12px}
+.hot-stat{flex:1;min-width:70px;background:linear-gradient(120deg,#f3fafe,#eaf6fb);border:1px solid #d7ecf5;border-radius:10px;padding:8px 10px;text-align:center}
+.hot-stat b{display:block;font-size:15px;color:#2b7fa0;font-weight:800}
+.hot-stat span{font-size:11px;color:var(--muted)}
+.hot-foot{display:flex;gap:8px}
+.hot-foot .pill-btn.ghost{flex:1;justify-content:center;padding:7px 0;font-size:13px}
+.pv-rows{margin:12px 0}
+.pv-row{display:flex;gap:10px;padding:6px 0;border-bottom:1px dashed #eef2f4;font-size:14px}
+.pv-k{color:var(--muted);min-width:96px;flex-shrink:0}
+.pv-v{color:var(--text);font-weight:600;word-break:break-all}
+.pv-block{margin:14px 0}
+.pv-h{font-size:13px;font-weight:700;color:#2b7fa0;margin-bottom:6px}
 </style>
 </head>
 <body>
@@ -428,6 +454,7 @@ function toast(msg){ const t=$('#toast'); t.textContent=msg; t.classList.add('sh
 /* ================= 数据 ================= */
 const KEY = 'fon_workbench_v1';
 let store = null;
+let hotData = [];   /* 带货情报：独立明文文件 hot.json（公开市场情报，与个人隐私数据 data.json 加密分离） */
 function save(){ localStorage.setItem(KEY, JSON.stringify(store)); schedulePush(); }
 function load(){
   try{ const raw = localStorage.getItem(KEY); if(raw) return JSON.parse(raw); }catch(e){}
@@ -494,6 +521,7 @@ function seed(){
 store = load() || seed();
 if(!store.talents) store.talents = seed().talents; /* 旧数据迁移 */
 save();
+loadHotLocal();   /* 带货情报本地兜底（云端会在 initSync 拉取覆盖） */
 
 /* ================= 云同步（Gitee 码云 单一真相源） ================= */
 const CK = 'fon_sync_cfg';
@@ -633,6 +661,29 @@ async function pullCloud(){
     toast('已从云端拉取最新数据');
   }catch(e){ setSync('err','拉取失败：'+friendlyErr(e)); console.error('pullCloud',e); }
 }
+/* ---- 带货情报：独立明文文件 hot.json（公开市场情报，与个人隐私数据 data.json 加密分离） ---- */
+function saveHotLocal(){ try{ localStorage.setItem('fon_hot', JSON.stringify(hotData)); }catch(e){} }
+function loadHotLocal(){ try{ const r=localStorage.getItem('fon_hot'); if(r) hotData=JSON.parse(r); }catch(e){} }
+async function pushHot(){
+  const c=getCfg();
+  if(!c||!c.owner||!c.repo||!c.token) return;   /* 未配置同步则仅本地保留 */
+  try{
+    let sha=null;
+    try{ const cur=await ghApi('hot.json','GET'); if(cur&&cur.sha) sha=cur.sha; }catch(e){}
+    const content=b64enc(JSON.stringify(hotData));
+    const method=sha?'PUT':'POST';
+    await ghApi('hot.json',method,{message:'FON hot feed '+new Date().toLocaleString(),content,sha:sha||undefined});
+  }catch(e){ console.error('pushHot',e); }
+}
+async function pullHot(){
+  const c=getCfg();
+  if(!c||!c.owner||!c.repo||!c.token) return;
+  const cur=await ghApi('hot.json','GET');
+  if(cur.notfound){ saveHotLocal(); return; }
+  let raw=b64dec(cur.content);
+  try{ const arr=JSON.parse(raw); if(Array.isArray(arr)){ hotData=arr; saveHotLocal(); } }catch(e){}
+}
+
 function friendlyErr(e){
   const m=(e&&e.message)||String(e);
   if(/401|unauthorized|token/i.test(m)) return '令牌无效或权限不足（请检查令牌是否正确、是否勾选了 projects 权限）';
@@ -657,6 +708,7 @@ async function initSync(){
   const c=getCfg();
   if(c&&c.owner&&c.repo&&c.token){
     setSync('ok','已连接 · '+(c.lastSync?timeAgo(c.lastSync):'未同步'));
+    await pullHot();                 /* 带货情报每日推送（独立于个人加密数据） */
     if(c.auto){ await pullCloud(); }
   } else { setSync('','未开启云同步'); }
 }
@@ -713,7 +765,8 @@ const state = {
   memoSearch:'', memoCat:'全部', memoSort:'updated',
   planFilter:'all', workSearch:'',
   calY:new Date().getFullYear(), calM:new Date().getMonth(), calSel:'',
-  talSearch:'', talPlat:'全部', talType:'全部', talFans:'全部', talStatus:'全部', talSort:'created', talMore:false
+  talSearch:'', talPlat:'全部', talType:'全部', talFans:'全部', talStatus:'全部', talSort:'created', talMore:false,
+  hotSearch:'', hotPlat:'全部', hotCat:'全部'
 };
 
 const MODS = {
@@ -731,7 +784,10 @@ const MODS = {
     icon:'<svg viewBox="0 0 24 24"><path d="M4 19V6a2 2 0 012-2h13v15H6a2 2 0 00-2 2zm0 0a2 2 0 002 2h13"/><path d="M9 8h6"/></svg>' },
   talent:{ name:'达人资源库', sub:'全平台达人信息管理 · 智能分类储存 · 快速检索复用',
     tabs:['达人列表','智能收录'],
-    icon:'<svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><path d="M16 4.5a3.5 3.5 0 010 7M18.5 14.5c1.9.9 3.2 2.6 3.5 5.5"/></svg>' }
+    icon:'<svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><path d="M16 4.5a3.5 3.5 0 010 7M18.5 14.5c1.9.9 3.2 2.6 3.5 5.5"/></svg>' },
+  hot:{ name:'带货情报', sub:'每日短视频平台爆款带货数据 · 可看详情 · 借鉴复盘',
+    tabs:['今日推送','全部情报'],
+    icon:'<svg viewBox="0 0 24 24"><path d="M4 4h16v12H4z"/><path d="M2 20h20"/><path d="M9 8l2 2 4-4"/></svg>' }
 };
 
 /* ================= 红点逻辑 ================= */
@@ -742,6 +798,7 @@ function hasDot(mod){
   if(mod==='memo'){ return store.memos.some(m=>m.created===t); }
   if(mod==='eng'){ return !store.eng.checkins[t]; }
   if(mod==='talent'){ return store.talents.some(x=>x.created===t); }
+  if(mod==='hot'){ return hotData.some(x=>x.date===t); }
   return false;
 }
 
@@ -771,7 +828,15 @@ function renderBanner(){
       <label class="banner-search">
         <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
         <input placeholder="搜昵称 / 联系方式 / 标签…" value="${esc(state.talSearch)}" oninput="state.talSearch=this.value;renderContent()">
-      </label>` : `
+      </label>` :
+      state.mod==='hot' ? `
+      <div class="banner-actions">
+        <label class="banner-search" style="flex:1;min-width:0">
+          <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+          <input placeholder="搜标题 / 账号 / 品类…" value="${esc(state.hotSearch)}" oninput="state.hotSearch=this.value;renderContent()">
+        </label>
+        <button class="pill-btn ghost" onclick="refreshHot()">🔄 刷新情报</button>
+      </div>` : `
       <label class="date-pick">
         <svg viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="16" rx="3"/><path d="M8 3v4M16 3v4M4 10h16"/></svg>
         <span>${fmtCN(state.date)}</span>
@@ -792,7 +857,8 @@ function renderContent(){
     work:[renderWorkToday, renderWorkHist],
     memo:[renderMemoToday, renderMemoAll],
     eng:[renderEngToday, renderEngHist],
-    talent:[renderTalentList, renderTalentIntake]
+    talent:[renderTalentList, renderTalentIntake],
+    hot:[renderHotToday, renderHotAll]
   }[state.mod][state.tab];
   c.innerHTML = fn();
   c.style.animation='none'; void c.offsetWidth; c.style.animation='';
@@ -1558,6 +1624,134 @@ function delTalent(id){
   if(!confirm('确定删除该达人档案吗？')) return;
   store.talents = store.talents.filter(x=>x.id!==id);
   save(); render(); toast('已删除');
+}
+
+/* ================= 模块6：带货情报 ================= */
+function platTag(p){ const m={'抖音':'douyin','快手':'kuaishou','视频号':'shipinhao'}; return `<span class="tag tag-${m[p]||'other'}">${p}</span>`; }
+
+function renderHotToday(){
+  const list = hotData.filter(x=>x.date===today()).sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+  if(!list.length){
+    return `<div class="card">
+      <div class="sec-head"><span class="sec-ico">📡</span><span class="sec-title">今日带货情报</span></div>
+      <div class="save-hint" style="text-align:left;line-height:1.8">
+        今日情报由「每日自动推送」任务更新（每天联网整理抖音 / 快手 / 视频号爆款带货数据写入你的云端）。<br>
+        你也可手动添加一条：
+      </div>
+      <div style="text-align:center;margin-top:10px"><button class="pill-btn" onclick="addHot()">➕ 手动添加一条情报</button></div>
+    </div>` + emptyHtml('📭','今日暂无推送，点右上角「🔄 刷新情报」试试，或手动添加');
+  }
+  return `<div class="card">
+    <div class="sec-head"><span class="sec-ico">🔥</span><span class="sec-title">今日推送 · 共 ${list.length} 条</span>
+      <button class="pill-btn ghost" style="margin-left:auto" onclick="addHot()">➕ 添加</button></div>
+    ${list.map(hotCard).join('')}
+  </div>`;
+}
+function renderHotAll(){
+  let list = hotData.slice().sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+  if(state.hotPlat!=='全部') list=list.filter(x=>x.platform===state.hotPlat);
+  if(state.hotCat!=='全部') list=list.filter(x=>(x.category||'').includes(state.hotCat));
+  if(state.hotSearch){ const kw=state.hotSearch.toLowerCase(); list=list.filter(x=>(x.title+' '+(x.account||'')+' '+(x.category||'')+' '+(x.highlights||'')).toLowerCase().includes(kw)); }
+  const plats=['全部',...Array.from(new Set(hotData.map(x=>x.platform).filter(Boolean)))];
+  const cats=['全部',...Array.from(new Set(hotData.map(x=>x.category).filter(Boolean)))];
+  return `<div class="card">
+    <div class="sec-head"><span class="sec-ico">📊</span><span class="sec-title">全部情报 · 共 ${list.length} 条</span>
+      <button class="pill-btn ghost" style="margin-left:auto" onclick="addHot()">➕ 添加</button></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">
+      <select class="mini-sel" onchange="state.hotPlat=this.value;renderContent()">${plats.map(p=>`<option ${state.hotPlat===p?'selected':''}>${p}</option>`).join('')}</select>
+      <select class="mini-sel" onchange="state.hotCat=this.value;renderContent()">${cats.map(c=>`<option ${state.hotCat===c?'selected':''}>${c}</option>`).join('')}</select>
+    </div>
+    ${list.length? list.map(hotCard).join('') : emptyHtml('📭','没有匹配的情报')}
+  </div>`;
+}
+function hotStat(label,val){ return val? `<div class="hot-stat"><b>${esc(val)}</b><span>${label}</span></div>` : ''; }
+function hotCard(x){
+  const isToday = x.date===today();
+  return `<div class="hot-card">
+    <div class="hot-top">
+      ${platTag(x.platform)} <span class="tag tag-other">${esc(x.category||'未分类')}</span>
+      <span style="margin-left:auto;color:var(--muted);font-size:12px">${fmtCN(x.date||'')}</span>
+      ${isToday? '<span class="hot-badge">今日推送</span>':''}
+    </div>
+    <div class="hot-title">${esc(x.title||'未命名情报')}</div>
+    ${x.account? `<div class="hot-acc">账号：${esc(x.account)}</div>`:''}
+    <div class="hot-stats">
+      ${hotStat('GMV',x.gmv)}${hotStat('销量',x.sales)}${hotStat('转化率',x.conversion)}${hotStat('粉丝/观看',x.fans)}
+    </div>
+    <div class="hot-foot">
+      <button class="pill-btn ghost" onclick="viewHot('${x.id}')">查看详情</button>
+      <button class="pill-btn ghost" onclick="editHot('${x.id}')">编辑</button>
+      <button class="pill-btn ghost" onclick="delHot('${x.id}')">删除</button>
+    </div>
+  </div>`;
+}
+function viewHot(id){
+  const x=hotData.find(t=>t.id===id); if(!x) return;
+  const row=(l,v)=> v? `<div class="pv-row"><span class="pv-k">${l}</span><span class="pv-v">${esc(v)}</span></div>`:'';
+  const box=$('#modalBox');
+  box.innerHTML=`<h3>📈 ${esc(x.title||'')}</h3>
+    <div class="pv-meta">${platTag(x.platform)} <span class="tag tag-other">${esc(x.category||'未分类')}</span> <span style="color:var(--muted)">${fmtCN(x.date||'')}</span></div>
+    <div class="pv-rows">
+      ${row('爆款账号',x.account)}
+      ${row('GMV（成交额）',x.gmv)}
+      ${row('销量',x.sales)}
+      ${row('转化率',x.conversion)}
+      ${row('粉丝/观看',x.fans)}
+    </div>
+    <div class="pv-block"><div class="pv-h">💡 可借鉴点</div><div class="full-text">${esc(x.highlights||'—')}</div></div>
+    <div class="pv-block"><div class="pv-h">📋 详情</div><div class="full-text">${esc(x.detail||'—')}</div></div>
+    ${row('数据来源',x.source)}
+    <div class="modal-btns"><button class="pill-btn" onclick="closeModal()">关闭</button></div>`;
+  $('#modalMask').classList.add('show');
+}
+function addHot(){
+  openForm('➕ 添加带货情报',[
+    {k:'date',l:'推送日期',req:true},
+    {k:'platform',l:'平台',t:'select',opts:['抖音','快手','视频号']},
+    {k:'category',l:'品类',req:true},
+    {k:'title',l:'标题/案例名',req:true},
+    {k:'account',l:'爆款账号/达人'},
+    {k:'gmv',l:'GMV（如 ¥320万）'},
+    {k:'sales',l:'销量'},
+    {k:'conversion',l:'转化率'},
+    {k:'fans',l:'粉丝/观看'},
+    {k:'highlights',l:'可借鉴点',t:'textarea'},
+    {k:'detail',l:'详情描述',t:'textarea'},
+    {k:'source',l:'数据来源'}
+  ], {date:today(),platform:'抖音',source:'手动添加'}, v=>{
+    hotData.unshift(Object.assign({id:uid()}, v));
+    saveHotLocal(); pushHot(); render(); toast('已添加');
+  });
+}
+function editHot(id){
+  const x=hotData.find(t=>t.id===id); if(!x) return;
+  openForm('✏️ 编辑带货情报',[
+    {k:'date',l:'推送日期',req:true},
+    {k:'platform',l:'平台',t:'select',opts:['抖音','快手','视频号']},
+    {k:'category',l:'品类',req:true},
+    {k:'title',l:'标题/案例名',req:true},
+    {k:'account',l:'爆款账号/达人'},
+    {k:'gmv',l:'GMV（如 ¥320万）'},
+    {k:'sales',l:'销量'},
+    {k:'conversion',l:'转化率'},
+    {k:'fans',l:'粉丝/观看'},
+    {k:'highlights',l:'可借鉴点',t:'textarea'},
+    {k:'detail',l:'详情描述',t:'textarea'},
+    {k:'source',l:'数据来源'}
+  ], x, v=>{
+    Object.assign(x, v);
+    saveHotLocal(); pushHot(); render(); toast('已保存');
+  });
+}
+function delHot(id){
+  if(!confirm('确定删除这条情报吗？')) return;
+  hotData=hotData.filter(x=>x.id!==id);
+  saveHotLocal(); pushHot(); render(); toast('已删除');
+}
+async function refreshHot(){
+  setSync('sync','刷新情报中…');
+  try{ await pullHot(); render(); setSync('ok','情报已刷新 · '+timeAgo(Date.now())); }
+  catch(e){ setSync('err','刷新失败：'+friendlyErr(e)); }
 }
 
 /* ================= 通用弹窗 ================= */
