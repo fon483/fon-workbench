@@ -432,6 +432,21 @@ mark{background:#ffe9a8;color:#8a6d1a;border-radius:4px;padding:0 2px}
 .nav-edit-foot .pill-btn{ flex:1;justify-content:center }
 .nav-edit-entry{ padding:8px 6px 2px;margin-top:4px;border-top:1px dashed var(--pink-line) }
 .pill-btn.sm{ font-size:12px;padding:7px 12px }
+/* ===== 媒体解析模块 ===== */
+.tips-ul{margin:6px 0 0;padding-left:18px;line-height:1.7;font-size:13px;color:var(--muted)}
+.tips-ul li{margin:4px 0}
+.af-hint{font-size:11.5px;color:var(--muted);margin-top:4px}
+.af-ok{border-color:var(--pink-deep);box-shadow:0 0 0 2px rgba(91,180,214,.18)}
+.mv-card{border:1px solid var(--pink-line);border-radius:14px;padding:14px;margin-top:12px;background:#fbfeff}
+.mv-cover{max-width:120px;border-radius:10px;display:block;margin-bottom:8px}
+.mv-title{font-weight:700;font-size:15px;margin-bottom:2px}
+.mv-meta{font-size:12.5px;color:var(--muted);margin-bottom:8px}
+.mv-player{width:100%;max-height:420px;border-radius:10px;background:#000;margin:6px 0 10px}
+.mw-toolbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:8px}
+.mw-size{font-size:12.5px;color:var(--muted);display:flex;align-items:center;gap:6px}
+.mw-size input{accent-color:var(--pink-deep)}
+.mw-canvas-wrap{margin-top:10px;border:1px dashed var(--pink-line);border-radius:12px;padding:8px;background:#fafcff;overflow:auto}
+#mwCanvas{max-width:100%;border-radius:8px;cursor:crosshair;touch-action:none;background:#fff}
 </style>
 </head>
 <body>
@@ -549,9 +564,26 @@ function seed(){
         {id:uid(),word:'meticulous',mean:'一丝不苟的；注重细节的',pos:'形容词',type:'word',inBook:false,mastered:false,date:t},
         {id:uid(),word:'collaborate',mean:'合作；协作',pos:'动词',type:'word',inBook:true,mastered:false,date:y1},
         {id:uid(),word:'in a nutshell',mean:'简而言之',pos:'词组',type:'word',inBook:true,mastered:false,date:y2},
+        {id:uid(),word:'resilient',mean:'有韧性的；能迅速恢复的',pos:'形容词',type:'word',inBook:true,mastered:false,date:t},
+        {id:uid(),word:'efficiency',mean:'效率；效能',pos:'名词',type:'word',inBook:true,mastered:false,date:y1},
+        {id:uid(),word:'negotiate',mean:'谈判；协商；商定',pos:'动词',type:'word',inBook:false,mastered:false,date:t},
+        {id:uid(),word:'opportunity',mean:'机会；时机',pos:'名词',type:'word',inBook:true,mastered:false,date:y2},
+        {id:uid(),word:'perspective',mean:'观点；视角；看法',pos:'名词',type:'word',inBook:false,mastered:false,date:t},
+        {id:uid(),word:'prioritize',mean:'按重要性排序；优先处理',pos:'动词',type:'word',inBook:true,mastered:false,date:y1},
+        {id:uid(),word:'sustainable',mean:'可持续的；能长久维持的',pos:'形容词',type:'word',inBook:false,mastered:false,date:t},
+        {id:uid(),word:'transparent',mean:'透明的；明晰坦率的',pos:'形容词',type:'word',inBook:true,mastered:false,date:y2},
+        {id:uid(),word:'leverage',mean:'充分利用；杠杆；影响力',pos:'动词',type:'word',inBook:false,mastered:false,date:t},
+        {id:uid(),word:'breakthrough',mean:'突破；重大进展',pos:'名词',type:'word',inBook:true,mastered:false,date:y1},
+        {id:uid(),word:'anticipate',mean:'预期；预料；提前准备',pos:'动词',type:'word',inBook:false,mastered:false,date:t},
         {id:uid(),word:'Practice makes perfect.',mean:'熟能生巧。',pos:'句子',type:'sentence',inBook:true,mastered:false,date:t},
         {id:uid(),word:'Where there is a will, there is a way.',mean:'有志者事竟成。',pos:'句子',type:'sentence',inBook:true,mastered:false,date:y1},
-        {id:uid(),word:'Could you please speak a little slower?',mean:'您能说慢一点吗？',pos:'句子',type:'sentence',inBook:false,mastered:false,date:y2}
+        {id:uid(),word:'Could you please speak a little slower?',mean:'您能说慢一点吗？',pos:'句子',type:'sentence',inBook:false,mastered:false,date:y2},
+        {id:uid(),word:'Let us schedule a meeting for next Monday.',mean:'我们约下周一开个会吧。',pos:'句子',type:'sentence',inBook:true,mastered:false,date:t},
+        {id:uid(),word:'I really appreciate your help.',mean:'我非常感谢你的帮助。',pos:'句子',type:'sentence',inBook:true,mastered:false,date:y1},
+        {id:uid(),word:'Could you send me the details by email?',mean:'你能把详情用邮件发给我吗？',pos:'句子',type:'sentence',inBook:false,mastered:false,date:t},
+        {id:uid(),word:'We need to find a win-win solution.',mean:'我们需要找一个双赢的方案。',pos:'句子',type:'sentence',inBook:true,mastered:false,date:y2},
+        {id:uid(),word:'Quality is more important than quantity.',mean:'质量比数量更重要。',pos:'句子',type:'sentence',inBook:false,mastered:false,date:t},
+        {id:uid(),word:'Do not put off till tomorrow what you can do today.',mean:'今日事今日毕。',pos:'句子',type:'sentence',inBook:true,mastered:false,date:y1}
       ],
       checkins:{ [y1]:{add:1,rev:2}, [y2]:{add:1,rev:0} }
     }
@@ -856,7 +888,10 @@ const MODS = {
     icon:'<svg viewBox="0 0 24 24"><path d="M4 4h16v12H4z"/><path d="M2 20h20"/><path d="M9 8l2 2 4-4"/></svg>' },
   side:{ name:'网创副业', sub:'每日抖音/快手/视频号/B站副业网创项目 · 内容分析 · 可行性评估',
     tabs:['今日推送','全部项目'],
-    icon:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/><path d="M9 3h6M9 21h6"/></svg>' }
+    icon:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/><path d="M9 3h6M9 21h6"/></svg>' },
+  media:{ name:'媒体解析', sub:'视频解析去水印 · 无水印下载提取 · 图片去水印工具',
+    tabs:['视频解析','图片去水印'],
+    icon:'<svg viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="12" rx="3"/><path d="M10 9l5 3-5 3z"/></svg>' }
 };
 
 /* ================= 导航栏排序（可调节） ================= */
@@ -906,6 +941,7 @@ function hasDot(mod){
   if(mod==='talent'){ return store.talents.some(x=>x.created===t); }
   if(mod==='hot'){ return hotData.some(x=>x.date===t); }
   if(mod==='side'){ return sideData.some(x=>x.date===t); }
+  if(mod==='media'){ return false; }
   return false;
 }
 
@@ -972,7 +1008,8 @@ function renderBanner(){
           <input placeholder="搜标题 / 账号 / 类型…" value="${esc(state.sideSearch)}" oninput="state.sideSearch=this.value;renderContent()">
         </label>
         <button class="pill-btn ghost" onclick="refreshSide()">🔄 刷新项目</button>
-      </div>` : `
+      </div>` :
+      state.mod==='media' ? `<div class="save-hint" style="text-align:right;margin:0">🛠️ 工具型模块 · 解析/处理结果仅本机显示，不会上传</div>` : `
       <label class="date-pick">
         <svg viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="16" rx="3"/><path d="M8 3v4M16 3v4M4 10h16"/></svg>
         <span>${fmtCN(state.date)}</span>
@@ -995,7 +1032,8 @@ function renderContent(){
     eng:[renderEngToday, renderEngHist],
     talent:[renderTalentList, renderTalentIntake],
     hot:[renderHotToday, renderHotAll],
-    side:[renderSideToday, renderSideAll]
+    side:[renderSideToday, renderSideAll],
+    media:[renderMediaVideo, renderMediaImg]
   }[state.mod][state.tab];
   c.innerHTML = fn();
   c.style.animation='none'; void c.offsetWidth; c.style.animation='';
@@ -1313,7 +1351,7 @@ function calcStreak(){
 function renderEngToday(){
   const words = store.eng.words;
   const news = words.filter(w=>w.date===state.date);
-  const reviews = words.filter(w=>w.inBook && !w.mastered && w.date!==state.date).slice(0,8);
+  const reviews = words.filter(w=>w.inBook && w.date!==state.date).slice(0,12);
   const ck = store.eng.checkins[state.date]||{add:0,rev:0};
   const wordRow = (w,isRev) => `
   <div class="item ${w.mastered?'done':''}">
@@ -1325,10 +1363,10 @@ function renderEngToday(){
     </div>
     ${w.type==='sentence'?`<div class="item-sub">${esc(w.mean)}</div>`:''}
     <div class="item-btns">
-      ${isRev ? `
+      ${isRev ? (w.mastered ? `<span class="tag tag-done">✓ 已掌握</span>` : `
         <button class="pill-btn green" onclick="reviewWord('${w.id}',true)">${IC.check} 记住了</button>
         <button class="pill-btn ghost" onclick="reviewWord('${w.id}',false)">↻ 没记住</button>
-      ` : `
+      `) : `
         <button class="pill-btn ${w.inBook?'gray':''}" onclick="toggleBook('${w.id}')">${IC.star} ${w.inBook?'已在生词本':'加入生词本'}</button>
         <button class="pill-btn ${w.mastered?'gray':'green'}" onclick="toggleMaster('${w.id}')">${IC.check} ${w.mastered?'已掌握':'标记已掌握'}</button>
         <button class="pill-btn ghost" onclick="delWord('${w.id}')">${IC.del} 删除</button>
@@ -1343,7 +1381,7 @@ function renderEngToday(){
       <div style="text-align:center;margin-top:10px"><button class="pill-btn ghost" onclick="addWord()">＋ 添加单词 / 句子</button></div>
     </div>
     <div class="sec">
-      <div class="sec-head"><span class="sec-ico">🔁</span><span class="sec-title">今日复习生词</span><span class="sec-count">${reviews.length} 个</span></div>
+      <div class="sec-head"><span class="sec-ico">🔁</span><span class="sec-title">今日复习生词</span><span class="sec-count">${reviews.filter(w=>!w.mastered).length} 个待复习</span></div>
       ${reviews.length?reviews.map(w=>wordRow(w,true)).join(''):emptyHtml('🎈','生词本里没有待复习的单词啦')}
     </div>
     <div class="sec">
@@ -1400,8 +1438,8 @@ function calMove(n){ let m=state.calM+n, y=state.calY; if(m<0){m=11;y--;} if(m>1
 function addWord(){
   openForm('＋ 添加学习内容',[
     {k:'type',l:'类型',t:'select',opts:['word','sentence']},
-    {k:'word',l:'英文单词 / 短句',t:'text',req:1},
-    {k:'mean',l:'中文释义 / 翻译',t:'text',req:1},
+    {k:'word',l:'英文单词 / 短句',t:'text',req:1, autofill:{target:'mean',dir:'en|zh-CN'}},
+    {k:'mean',l:'中文释义 / 翻译',t:'text',req:1, autofill:{target:'word',dir:'zh-CN|en'}},
     {k:'pos',l:'词性 / 说明',t:'select',opts:['名词','动词','形容词','副词','词组','句子','其他']}
   ],{type:'word',pos:'名词'},v=>{
     store.eng.words.push({id:uid(),...v,inBook:false,mastered:false,date:state.date});
@@ -1412,9 +1450,9 @@ function toggleBook(id){ const w=store.eng.words.find(x=>x.id===id); if(w){ w.in
 function toggleMaster(id){ const w=store.eng.words.find(x=>x.id===id); if(w){ w.mastered=!w.mastered; save(); render(); toast(w.mastered?'已掌握，继续保持 💪':'已取消掌握标记'); } }
 function reviewWord(id,ok){
   const w=store.eng.words.find(x=>x.id===id); if(!w) return;
-  if(ok) w.mastered=true;
+  if(ok){ w.mastered=true; toast('已掌握，给你点赞 👍（仍在列表内，方便回顾）'); }
+  else { toast('没关系，下次继续复习 💪'); }
   checkin('rev'); save(); render();
-  toast(ok?'记住了！已移出复习列表 🎉':'没关系，下次继续复习 💪');
 }
 function delWord(id){ if(!confirm('确定删除该单词？')) return; store.eng.words=store.eng.words.filter(x=>x.id!==id); save(); render(); toast('已删除'); }
 function speakWord(id){
@@ -2070,6 +2108,227 @@ function copyLink(id){
   toast('链接已复制：'+x.platform+' 视频直链');
 }
 
+/* ================= 模块8：媒体解析（视频去水印/解析 + 图片去水印） ================= */
+let mediaResult = null;   /* 视频解析结果（仅本机内存，不持久化、不上传） */
+
+/* ---------- 视频解析 / 去水印 ---------- */
+function renderMediaVideo(){
+  const tips = [
+    '抖音 / 快手 / 视频号：在 App 内「分享 → 复制链接」，把整段分享文字或链接粘贴进来即可。',
+    '解析依赖第三方公益接口，偶发不稳定属正常；若自动解析失败，可切到「手动粘贴直链」直接观看/下载。',
+    '「去水印」= 拿到无水印的原片。本工具只做解析展示与下载，视频版权归原作者所有，请合理使用。'
+  ].map(t=>`<li>${t}</li>`).join('');
+  return `
+  <div class="card">
+    <div class="sec">
+      <div class="sec-head"><span class="sec-ico">🔗</span><span class="sec-title">视频解析 / 去水印</span>
+        <span class="sec-count">抖音·快手·视频号·B站·小红书</span></div>
+      <div class="field" style="margin-top:6px">
+        <label>粘贴分享链接 / 分享口令（抖音、快手、视频号、B站、小红书…）</label>
+        <textarea id="mvInput" rows="3" placeholder="例如：https://v.douyin.com/iRxxxx/  或整段分享文案"></textarea>
+      </div>
+      <div class="modal-btns" style="justify-content:flex-start;gap:8px;flex-wrap:wrap">
+        <button class="pill-btn" onclick="parseVideo()">🔍 解析去水印</button>
+        <button class="pill-btn ghost" onclick="mediaManualMode()">✋ 手动粘贴直链</button>
+        <button class="pill-btn ghost" onclick="mediaClear()">清空</button>
+      </div>
+      <div id="mvStatus" class="save-hint" style="margin-top:8px"></div>
+      <div id="mvResult"></div>
+    </div>
+    <div class="sec">
+      <div class="sec-head"><span class="sec-ico">💡</span><span class="sec-title">使用提示</span></div>
+      <ul class="tips-ul">${tips}</ul>
+    </div>
+  </div>`;
+}
+function detectPlatform(text){
+  if(/v\.douyin\.com|douyin\.com|\/douyin\/|抖音/.test(text)) return '抖音';
+  if(/v\.kuaishou\.com|kuaishou\.com|快手/.test(text)) return '快手';
+  if(/weixin\.qq\.com\/sph|微信|视频号/.test(text)) return '视频号';
+  if(/bilibili\.com|b23\.tv|B站|bilibili/.test(text)) return 'B站';
+  if(/xiaohongshu\.com|xhslink\.com|小红书/.test(text)) return '小红书';
+  return '未知平台';
+}
+function extractUrl(text){
+  const m = text.match(/https?:\/\/[^\s"'<>）)]+/);
+  return m ? m[0] : text.trim();
+}
+/* 多接口依次尝试（社区公益接口，可能波动，失败则跳过） */
+const VIDEO_APIS = [
+  'https://api.lolimi.cn/API/dy_jx/?url=',
+  'https://api.lolimi.cn/API/ks_jx/?url=',
+  'https://api.cenguigui.cn/api/douyin/?url=',
+  'https://api.pearktrue.cn/api/douyin/?url='
+];
+async function parseVideo(){
+  const raw = (document.getElementById('mvInput')||{}).value || '';
+  const st = document.getElementById('mvStatus');
+  if(!raw.trim()){ toast('请先粘贴分享链接'); return; }
+  const plat = detectPlatform(raw);
+  const url = extractUrl(raw);
+  st.innerHTML = '⌛ 正在解析（'+plat+'）…';
+  let foundUrl=null, meta=null;
+  for(const base of VIDEO_APIS){
+    try{
+      const ctrl = new AbortController();
+      const to = setTimeout(()=>ctrl.abort(), 12000);
+      const resp = await fetch(base+encodeURIComponent(url), {signal:ctrl.signal, headers:{'Accept':'application/json'}});
+      clearTimeout(to);
+      if(!resp.ok) continue;
+      const j = await resp.json().catch(()=>null);
+      if(!j) continue;
+      const v = pickVideoUrl(j);
+      if(v){
+        foundUrl = v;
+        meta = {
+          title: (j.title || (j.data&&j.data.title) || ''),
+          author: (j.author || (j.data&&j.data.author) || (j.data&&j.data.nickname) || ''),
+          cover: (j.cover || (j.data&&j.data.cover) || (j.data&&j.data.avatar) || '')
+        };
+        break;
+      }
+    }catch(e){ /* 该接口不可用，尝试下一个 */ }
+  }
+  if(foundUrl){
+    mediaResult = {url:foundUrl, title:meta.title, author:meta.author, cover:meta.cover, platform:plat, manual:false};
+    st.innerHTML = '✅ 解析成功（'+plat+'）· 已去除水印';
+  } else {
+    mediaResult = null;
+    st.innerHTML = '⚠️ 自动解析暂未成功（接口可能波动）。请在输入框粘贴视频直链，再点「手动粘贴直链」直接观看/下载。';
+  }
+  renderMediaResult();
+}
+/* 从接口返回的 JSON 里尽力找出可播放的视频地址 */
+function pickVideoUrl(j){
+  if(!j || typeof j!=='object') return null;
+  const keys = ['url','video','video_url','play','nwm','no_watermark','url_no_watermark','wml','mp4','src','playUrl','play_url','download','link','media','vurl'];
+  const isVid = s => typeof s==='string' && /\.(mp4|mov|m3u8|flv)/.test(s);
+  for(const k of keys){ if(isVid(j[k])) return j[k]; }
+  const d = j.data || j.result;
+  if(d && typeof d==='object'){ for(const k of keys){ if(isVid(d[k])) return d[k]; } }
+  let hit=null;
+  (function scan(o){ if(hit||!o||typeof o!=='object') return;
+    if(Array.isArray(o)){ o.forEach(scan); return; }
+    for(const k in o){ const v=o[k]; if(isVid(v)){ hit=v; return; } if(v&&typeof v==='object') scan(v); }
+  })(j);
+  return hit;
+}
+function renderMediaResult(){
+  const box = document.getElementById('mvResult'); if(!box) return;
+  const r = mediaResult;
+  if(!r){ box.innerHTML=''; return; }
+  box.innerHTML = `
+    <div class="mv-card">
+      ${r.cover?`<img class="mv-cover" src="${esc(r.cover)}" onerror="this.style.display='none'">`:''}
+      <div class="mv-info">
+        <div class="mv-title">${esc(r.title||'未命名视频')}</div>
+        <div class="mv-meta">${esc(r.author||'')} · ${esc(r.platform||'')} ${r.manual?'· 手动直链':''}</div>
+      </div>
+      <video class="mv-player" src="${esc(r.url)}" controls preload="metadata"></video>
+      <div class="modal-btns" style="justify-content:flex-start;gap:8px;flex-wrap:wrap">
+        <a class="pill-btn" href="${esc(r.url)}" target="_blank" rel="noopener" download>⬇ 下载（新窗口）</a>
+        <button class="pill-btn ghost" onclick="copyMediaUrl()">📋 复制直链</button>
+      </div>
+      <div class="vid-tip">若「下载」被浏览器拦截，请点「复制直链」后在手机/电脑浏览器打开该链接，再长按/右键保存。</div>
+    </div>`;
+}
+function copyMediaUrl(){ if(mediaResult && mediaResult.url) clipCopy(mediaResult.url); }
+function mediaManualMode(){
+  const raw = (document.getElementById('mvInput')||{}).value || '';
+  const url = extractUrl(raw);
+  if(!/^https?:\/\//.test(url)){ toast('请在输入框粘贴有效的视频直链（以 http 开头）'); return; }
+  mediaResult = {url, title:'手动粘贴的直链', author:'', platform:detectPlatform(url), manual:true};
+  const st = document.getElementById('mvStatus'); if(st) st.innerHTML='✅ 已进入手动模式，可直接观看/下载';
+  renderMediaResult();
+}
+function mediaClear(){ mediaResult=null; const i=document.getElementById('mvInput'); if(i) i.value=''; const st=document.getElementById('mvStatus'); if(st) st.innerHTML=''; renderMediaResult(); }
+
+/* ---------- 图片去水印（客户端克隆图章，离线可用，不上传） ---------- */
+let _imgCtx=null, _imgLoaded=false, _srcPt=null, _stampMode='sample', mwOrigImg=null, mwSizeVal=20;
+function renderMediaImg(){
+  return `
+  <div class="card">
+    <div class="sec">
+      <div class="sec-head"><span class="sec-ico">🖼️</span><span class="sec-title">图片去水印</span>
+        <span class="sec-count">纯本地处理 · 不上传服务器</span></div>
+      <div class="field" style="margin-top:6px">
+        <label>① 上传带水印的图片</label>
+        <input type="file" id="mwFile" accept="image/*" onchange="mwLoad(this)">
+      </div>
+      <div class="mw-toolbar">
+        <button class="pill-btn ${_stampMode==='sample'?'':'ghost'}" data-mode="sample" onclick="mwSetMode('sample')">① 取样（Alt+点击）</button>
+        <button class="pill-btn ${_stampMode==='paint'?'':'ghost'}" data-mode="paint" onclick="mwSetMode('paint')">② 涂抹覆盖</button>
+        <label class="mw-size">笔刷 <input type="range" id="mwSize" min="4" max="60" value="20" oninput="mwSizeVal=+this.value;document.getElementById('mwSizeLbl').textContent=this.value"> <b id="mwSizeLbl">20</b>px</label>
+      </div>
+      <div class="mw-canvas-wrap"><canvas id="mwCanvas" width="800" height="500"
+        onmousedown="mwDown(event)" onmousemove="mwMove(event)" onmouseup="mwUp()" onmouseleave="mwUp()"
+        ontouchstart="mwDown(event)" ontouchmove="mwMove(event)" ontouchend="mwUp()"></canvas></div>
+      <div class="vid-tip">用法：先点「取样」在干净处 <b>按住 Alt 点击</b> 取样点 → 再点「涂抹覆盖」在水印处拖动，即可用取样像素盖掉水印。可反复操作直到干净。</div>
+      <div class="modal-btns" style="justify-content:flex-start;gap:8px;flex-wrap:wrap;margin-top:8px">
+        <button class="pill-btn" onclick="mwExport()">💾 导出去水印图片</button>
+        <button class="pill-btn ghost" onclick="mwReset()">↺ 还原</button>
+      </div>
+    </div>
+  </div>`;
+}
+function mwSetMode(m){
+  _stampMode=m;
+  document.querySelectorAll('.mw-toolbar .pill-btn').forEach(b=>{
+    b.classList.toggle('ghost', b.dataset.mode!==m);
+  });
+  toast(m==='sample' ? '取样模式：在干净处按住 Alt 点击取样点' : '涂抹模式：在水印处按住拖动即可覆盖');
+}
+function mwLoad(input){
+  const f=input.files&&input.files[0]; if(!f) return;
+  const img=new Image();
+  img.onload=()=>{
+    mwOrigImg=img;
+    const cv=document.getElementById('mwCanvas'); if(!cv) return;
+    const maxW=800, scale=Math.min(1,maxW/img.width);
+    cv.width=Math.round(img.width*scale); cv.height=Math.round(img.height*scale);
+    _imgCtx=cv.getContext('2d'); _imgCtx.drawImage(img,0,0,cv.width,cv.height);
+    _imgLoaded=true; _srcPt=null; toast('图片已载入，开始去水印吧');
+  };
+  img.src=URL.createObjectURL(f);
+}
+function mwRedraw(){
+  if(!mwOrigImg||!_imgCtx) return;
+  const cv=document.getElementById('mwCanvas'); _imgCtx.drawImage(mwOrigImg,0,0,cv.width,cv.height); _srcPt=null;
+}
+function mwPos(e){
+  const cv=document.getElementById('mwCanvas'); const r=cv.getBoundingClientRect();
+  const p=(e.touches&&e.touches[0])||e;
+  return { x:(p.clientX-r.left)*(cv.width/r.width), y:(p.clientY-r.top)*(cv.height/r.height) };
+}
+function mwDown(e){
+  if(!_imgLoaded) return;
+  const pt=mwPos(e);
+  if(_stampMode==='sample' || e.altKey){ _srcPt=pt; toast('已取样 ✓'); return; }
+  if(_stampMode==='paint'){ if(!_srcPt){ toast('请先取样（Alt+点击干净处）'); return; } mwPaint(pt); }
+}
+function mwMove(e){
+  if(!_imgLoaded || _stampMode!=='paint' || !_srcPt) return;
+  if(e.buttons!==1 && !(e.touches&&e.touches.length)) return;
+  mwPaint(mwPos(e));
+}
+function mwUp(){}
+function mwPaint(pt){
+  if(!_srcPt) return;
+  const cv=document.getElementById('mwCanvas'); const ctx=_imgCtx; if(!ctx) return;
+  const s=mwSizeVal, half=Math.floor(s/2);
+  const sx=Math.round(_srcPt.x-half), sy=Math.round(_srcPt.y-half);
+  const dx=Math.round(pt.x-half), dy=Math.round(pt.y-half);
+  try{
+    const img=ctx.getImageData(Math.max(0,sx),Math.max(0,sy),s,s);
+    ctx.putImageData(img, Math.max(0,dx), Math.max(0,dy));
+  }catch(err){ /* 越界忽略 */ }
+}
+function mwExport(){
+  const cv=document.getElementById('mwCanvas'); if(!cv){ toast('请先上传图片'); return; }
+  const a=document.createElement('a'); a.download='去水印_'+Date.now()+'.png'; a.href=cv.toDataURL('image/png'); a.click(); toast('已导出 ✔');
+}
+function mwReset(){ mwRedraw(); toast('已还原'); }
+
 /* ================= 通用弹窗 ================= */
 function openForm(title, fields, init, onOk){
   const box = $('#modalBox');
@@ -2077,7 +2336,7 @@ function openForm(title, fields, init, onOk){
     const v = esc(init[f.k]||'');
     if(f.t==='textarea') return `<div class="field"><label>${f.l}${f.req?' *':''}</label><textarea id="f_${f.k}">${v}</textarea></div>`;
     if(f.t==='select') return `<div class="field"><label>${f.l}</label><select id="f_${f.k}">${f.opts.map(o=>`<option ${init[f.k]===o?'selected':''}>${o}</option>`).join('')}</select></div>`;
-    return `<div class="field"><label>${f.l}${f.req?' *':''}</label><input id="f_${f.k}" value="${v}"></div>`;
+    return `<div class="field"><label>${f.l}${f.req?' *':''}</label><input id="f_${f.k}" value="${v}">${f.autofill?`<div class="af-hint" id="afh_${f.k}">⌨️ 输入${f.autofill.dir==='en2zh'?'英文':'中文'}将自动翻译另一栏</div>`:''}</div>`;
   }).join('') + `
   <div class="modal-btns">
     <button class="pill-btn ghost" onclick="closeModal()">取消</button>
@@ -2091,8 +2350,38 @@ function openForm(title, fields, init, onOk){
     }
     closeModal(); onOk(v);
   };
+  /* 自动翻译：输入一栏自动填充另一栏（MyMemory 免费翻译接口） */
+  for(const f of fields){
+    if(!f.autofill) continue;
+    const el = $('#f_'+f.k), tgt = $('#f_'+f.autofill.target), hint = $('#afh_'+f.k);
+    let timer;
+    el.addEventListener('input', ()=>{
+      const val = el.value.trim();
+      if(!val || tgt.value.trim()!=='') return;   /* 目标已有内容则不覆盖 */
+      clearTimeout(timer);
+      timer = setTimeout(async ()=>{
+        if(hint) hint.textContent='⌛ 翻译中…';
+        const tr = await translateText(val, f.autofill.dir);
+        if(tr && tgt.value.trim()===''){ tgt.value = tr; tgt.classList.add('af-ok'); }
+        if(hint) hint.textContent = tr ? '✅ 已自动翻译（可手动修改）' : '⚠️ 自动翻译暂不可用，可手动填写';
+      }, 500);
+    });
+  }
   $('#modalMask').classList.add('show');
   const fi = box.querySelector('input,textarea'); if(fi) setTimeout(()=>fi.focus(),100);
+}
+async function translateText(text, dir){
+  try{
+    const pair = dir;  /* dir 形如 en|zh-CN / zh-CN|en */
+    const r = await fetch('https://api.mymemory.translated.net/get?q='+encodeURIComponent(text)+'&langpair='+pair);
+    const j = await r.json();
+    let t='';
+    if(j && j.responseData){
+      if(typeof j.responseData==='object' && j.responseData.translatedText) t=j.responseData.translatedText;
+      else if(Array.isArray(j.responseData) && j.responseData[0]) t=j.responseData[0].translatedText;
+    }
+    return (t||'').toString().trim();
+  }catch(e){ return ''; }
 }
 function openView(title, text){
   $('#modalBox').innerHTML = `<h3>${esc(title)}</h3><div class="full-text">${esc(text)}</div>
@@ -2112,7 +2401,7 @@ function onSearch(key, el){
 
 /* ================= 快捷新增 ================= */
 function quickAdd(){
-  ({plan:addPlan, work:addTask, memo:addMemo, eng:addWord, talent:addTalent, side:addSide})[state.mod]();
+  ({plan:addPlan, work:addTask, memo:addMemo, eng:addWord, talent:addTalent, side:addSide, media:()=>{}})[state.mod]();
 }
 
 /* ================= 头像 ================= */
