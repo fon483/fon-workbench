@@ -1926,6 +1926,7 @@ function sideCard(x){
       ${sideStat('投入',x.investment)}${sideStat('收益预期',x.ret)}${sideStat('适合人群',x.suitable)}
     </div>
     <div class="hot-foot">
+      <button class="pill-btn ghost" onclick="openSideVideo('${x.id}')">▶ 看原视频</button>
       <button class="pill-btn ghost" onclick="viewSide('${x.id}')">查看详情</button>
       <button class="pill-btn ghost" onclick="editSide('${x.id}')">编辑</button>
       <button class="pill-btn ghost" onclick="delSide('${x.id}')">删除</button>
@@ -1947,6 +1948,7 @@ function viewSide(id){
       ${row('数据来源',x.source)}
     </div>
     <div class="pv-block"><div class="pv-h">📝 视频内容总结</div><div class="full-text">${esc(x.summary||'—')}</div></div>
+    <div class="pv-block"><div class="pv-h">▶ 原视频</div><button class="pill-btn" onclick="openSideVideo('${x.id}')">在新窗口观看 / 转跳到 ${esc(x.platform)}</button></div>
     <div class="modal-btns"><button class="pill-btn" onclick="closeModal()">关闭</button></div>`;
   $('#modalMask').classList.add('show');
 }
@@ -1956,6 +1958,7 @@ const SIDE_FIELDS = [
   {k:'category',l:'副业类型',req:true},
   {k:'title',l:'项目名/标题',req:true},
   {k:'account',l:'发布账号/UP主'},
+  {k:'videoUrl',l:'视频链接（抖音/快手/B站 分享链接，可点开观看）'},
   {k:'summary',l:'视频内容总结',t:'textarea'},
   {k:'feasibility',l:'可行性评估',t:'select',opts:['高','中','低']},
   {k:'investment',l:'投入(时间/资金)'},
@@ -1986,6 +1989,11 @@ async function refreshSide(){
   setSync('sync','刷新项目中…');
   try{ await pullSide(); render(); setSync('ok','项目已刷新 · '+timeAgo(Date.now())); }
   catch(e){ setSync('err','刷新失败：'+friendlyErr(e)); }
+}
+function openSideVideo(id){
+  const x=sideData.find(t=>t.id===id); if(!x) return;
+  if(x.videoUrl){ window.open(x.videoUrl,'_blank','noopener'); toast('正在打开 '+x.platform+' 视频'); }
+  else { toast('该条暂无视频链接，可在「编辑」里补充'); }
 }
 
 /* ================= 通用弹窗 ================= */
