@@ -577,7 +577,7 @@ async function decryptTextLegacy(wrapped, pass){
   return new TextDecoder().decode(pt);
 }
 function timeAgo(ts){ if(!ts) return ''; const s=Math.floor((Date.now()-ts)/1000); if(s<60)return'刚刚'; if(s<3600)return Math.floor(s/60)+'分钟前'; if(s<86400)return Math.floor(s/3600)+'小时前'; return Math.floor(s/86400)+'天前'; }
-function setSync(cls,txt){ const d=$('#syncDot'),t=$('#syncTxt'); if(!d)return; d.className='sync-dot'+(cls?(' '+cls):''); t.textContent=txt; }
+function setSync(cls,txt){ const d=$('#syncDot'),t=$('#syncTxt'); if(!d)return; d.className='sync-dot'+(cls?(' '+cls):''); t.textContent=txt; t.title=txt; t.style.cursor=cls==='err'?'pointer':''; t.onclick=cls==='err'?()=>{ alert('完整错误：\n'+txt); }:null; }
 let _pushTimer=null;
 function schedulePush(){ const c=getCfg(); if(!c||!c.auto) return; clearTimeout(_pushTimer); _pushTimer=setTimeout(pushCloud,700); }
 async function ghApi(path, method, body){
@@ -610,7 +610,8 @@ async function pushCloud(){
     let payload=JSON.stringify(store);
     if(c.pass){ payload=await encryptText(payload, c.pass); }
     const content=b64enc(payload);
-    await ghApi('data.json','POST',{message:'FON sync '+new Date().toLocaleString(),content,sha:sha||undefined});
+    const method=sha?'PUT':'POST';
+    await ghApi('data.json',method,{message:'FON sync '+new Date().toLocaleString(),content,sha:sha||undefined});
     c.lastSync=Date.now(); setCfg(c); setSync('ok','已同步 · '+timeAgo(c.lastSync));
   }catch(e){ setSync('err','同步失败：'+friendlyErr(e)); console.error('pushCloud',e); }
 }
