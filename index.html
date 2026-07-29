@@ -591,7 +591,9 @@ async function ghApi(path, method, body){
   const r=await fetch(url,opt);
   if(r.status===404) return {notfound:true};
   if(!r.ok){ let m=''; try{m=(await r.json()).message;}catch(e){} throw new Error(m||('Gitee '+r.status)); }
-  return r.json();
+  const j=await r.json().catch(()=>null);
+  if(!j || Array.isArray(j) || (j.sha===undefined && j.content===undefined)) return {notfound:true};
+  return j;
 }
 async function pushCloud(){
   const c=getCfg();
@@ -603,7 +605,7 @@ async function pushCloud(){
     let payload=JSON.stringify(store);
     if(c.pass){ payload=await encryptText(payload, c.pass); }
     const content=b64enc(payload);
-    await ghApi('data.json','PUT',{message:'FON sync '+new Date().toLocaleString(),content,sha:sha||undefined});
+    await ghApi('data.json','POST',{message:'FON sync '+new Date().toLocaleString(),content,sha:sha||undefined});
     c.lastSync=Date.now(); setCfg(c); setSync('ok','已同步 · '+timeAgo(c.lastSync));
   }catch(e){ setSync('err','同步失败：'+friendlyErr(e)); console.error('pushCloud',e); }
 }
