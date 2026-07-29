@@ -403,6 +403,11 @@ mark{background:#ffe9a8;color:#8a6d1a;border-radius:4px;padding:0 2px}
 .pv-v{color:var(--text);font-weight:600;word-break:break-all}
 .pv-block{margin:14px 0}
 .pv-h{font-size:13px;font-weight:700;color:#2b7fa0;margin-bottom:6px}
+/* 网创副业：视频观看区 */
+.bili-embed{width:100%;height:240px;border:0;border-radius:12px;background:#000;margin-bottom:8px}
+.share-code{background:var(--pink-bg,#f3f9fb);border:1px solid var(--pink-line,#dceaf0);border-radius:8px;padding:8px 10px;font-size:12px;color:#355;word-break:break-all;margin:8px 0}
+.vid-tip{font-size:12px;color:var(--muted);margin-top:6px;line-height:1.5}
+.vid-actions{display:flex;gap:8px;flex-wrap:wrap}
 /* 导航排序（调节模式） */
 .menu-item.nav-edit-row{ display:flex;align-items:center;gap:8px;cursor:grab; }
 .menu-item.nav-edit-row:active{cursor:grabbing}
@@ -1948,7 +1953,19 @@ function viewSide(id){
       ${row('数据来源',x.source)}
     </div>
     <div class="pv-block"><div class="pv-h">📝 视频内容总结</div><div class="full-text">${esc(x.summary||'—')}</div></div>
-    <div class="pv-block"><div class="pv-h">▶ 原视频</div><button class="pill-btn" onclick="openSideVideo('${x.id}')">在新窗口观看 / 转跳到 ${esc(x.platform)}</button></div>
+    <div class="pv-block">
+      <div class="pv-h">▶ 原视频（${esc(x.platform||'')}）</div>
+      ${(()=>{ const bv = x.videoUrl && x.videoUrl.match(/bilibili\.com\/video\/(BV[\w]+)/);
+        if(bv){ return `<iframe class="bili-embed" src="https://player.bilibili.com/player.html?bvid=${bv[1]}&page=1&high_quality=1&autoplay=0" allowfullscreen></iframe>
+          <div class="vid-tip">✅ B站支持内联播放，直接点上方即可观看，无需跳转。</div>`; }
+        let h='';
+        if(x.videoUrl){ h += `<a class="pill-btn" href="${esc(x.videoUrl)}" target="_blank" rel="noopener">🔗 在新窗口打开 / 转跳${esc(x.platform)}</a>`; }
+        if(x.shareCode){ h += `<button class="pill-btn ghost" onclick="copyShare('${x.id}')">📋 复制分享口令</button>`; }
+        if(!h){ h = `<span class="vid-tip">该条暂未填视频链接/口令，点「编辑」补充后即可观看。</span>`; }
+        const tipMap={'抖音':'复制口令后打开抖音，长按搜索框粘贴即可跳转原视频。','快手':'复制口令后打开快手，搜索框粘贴即可跳转原视频。','视频号':'视频号无网页直链，请复制口令后在微信「搜一搜」粘贴观看。','B站':'B站可内联播放，填入含 /video/BV 的链接即可。'};
+        return `${h}${x.shareCode?`<div class="share-code">口令：${esc(x.shareCode)}</div>`:''}${tipMap[x.platform]?`<div class="vid-tip">${tipMap[x.platform]}</div>`:''}`;
+      })()}
+    </div>
     <div class="modal-btns"><button class="pill-btn" onclick="closeModal()">关闭</button></div>`;
   $('#modalMask').classList.add('show');
 }
@@ -1958,7 +1975,8 @@ const SIDE_FIELDS = [
   {k:'category',l:'副业类型',req:true},
   {k:'title',l:'项目名/标题',req:true},
   {k:'account',l:'发布账号/UP主'},
-  {k:'videoUrl',l:'视频链接（抖音/快手/B站 分享链接，可点开观看）'},
+  {k:'videoUrl',l:'视频链接（抖音/快手/B站 分享链接；B站填含 /video/BV 的链接可内联播放）'},
+  {k:'shareCode',l:'分享口令（抖音/快手点「分享→复制链接」得到的那串码，粘贴进App即可跳原视频）'},
   {k:'summary',l:'视频内容总结',t:'textarea'},
   {k:'feasibility',l:'可行性评估',t:'select',opts:['高','中','低']},
   {k:'investment',l:'投入(时间/资金)'},
@@ -1992,8 +2010,22 @@ async function refreshSide(){
 }
 function openSideVideo(id){
   const x=sideData.find(t=>t.id===id); if(!x) return;
-  if(x.videoUrl){ window.open(x.videoUrl,'_blank','noopener'); toast('正在打开 '+x.platform+' 视频'); }
-  else { toast('该条暂无视频链接，可在「编辑」里补充'); }
+  const bv = x.videoUrl && x.videoUrl.match(/bilibili\.com\/video\/(BV[\w]+)/);
+  if(bv){ viewSide(id); return; }                              /* B站：直接内联播放，不跳转 */
+  if(x.videoUrl){ window.open(x.videoUrl,'_blank','noopener'); toast('正在打开 '+x.platform+' 视频'); return; }
+  if(x.shareCode){ copyShare(id); return; }
+  toast('该条暂无视频链接/口令，可在「编辑」里补充');
+}
+function copyText(t){
+  try{
+    if(navigator.clipboard && navigator.clipboard.writeText){ navigator.clipboard.writeText(t); }
+    else { const ta=document.createElement('textarea'); ta.value=t; ta.style.position='fixed'; ta.style.opacity='0'; document.body.appendChild(ta); ta.focus(); ta.select(); document.execCommand('copy'); ta.remove(); }
+  }catch(e){}
+}
+function copyShare(id){
+  const x=sideData.find(t=>t.id===id); if(!x||!x.shareCode) return;
+  copyText(x.shareCode);
+  toast('口令已复制，去'+x.platform+'粘贴即可看原视频');
 }
 
 /* ================= 通用弹窗 ================= */
