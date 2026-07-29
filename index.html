@@ -1345,7 +1345,15 @@ function renderTalentIntake(){
 
 /* ---- 文本解析引擎 ---- */
 function parseTalentText(text){
-  const blocks = text.split(/\n\s*\n+/).map(b=>b.trim()).filter(Boolean);
+  let blocks = text.split(/\n\s*\n+/).map(b=>b.trim()).filter(Boolean);
+  if(blocks.length<=1){
+    const lines = text.split(/\r?\n/).map(b=>b.trim()).filter(Boolean);
+    const platLines = lines.filter(l=>/抖音|快手|视频号/.test(l));
+    const fullRows = lines.filter(l=>/抖音|快手|视频号/.test(l)&&/1[3-9]\d{9}|wx[:：]?|微信|粉丝|报价|坑位/i.test(l));
+    if(fullRows.length>=2 || (platLines.length>=2 && platLines.length===lines.length)){
+      blocks = lines;
+    }
+  }
   const results = [];
   for(const b of blocks){
     const t = {name:'',platform:'',platformId:'',type:'',contact:'',fans:'',price:'',org:'',note:'',status:'未合作'};
