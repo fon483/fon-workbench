@@ -495,7 +495,7 @@ store = load() || seed();
 if(!store.talents) store.talents = seed().talents; /* 旧数据迁移 */
 save();
 
-/* ================= 云同步（GitHub 单一真相源） ================= */
+/* ================= 云同步（Gitee 码云 单一真相源） ================= */
 const CK = 'fon_sync_cfg';
 function getCfg(){ try{ return JSON.parse(localStorage.getItem(CK))||{}; }catch(e){ return {}; } }
 function setCfg(c){ localStorage.setItem(CK, JSON.stringify(c)); }
@@ -584,10 +584,15 @@ async function ghApi(path, method, body){
   const c=getCfg();
   const q = new URLSearchParams();
   q.set('access_token', c.token);
-  if(c.branch) q.set(method==='GET'?'ref':'branch', c.branch);
+  if(method==='GET' && c.branch) q.set('ref', c.branch);
   const url='https://gitee.com/api/v5/repos/'+encodeURIComponent(c.owner)+'/'+encodeURIComponent(c.repo)+'/contents/'+path+'?'+q.toString();
   const headers={'Accept':'application/json','Content-Type':'application/json'};
-  const opt={method,headers}; if(body!==undefined) opt.body=JSON.stringify(body);
+  const opt={method,headers};
+  if(body!==undefined){
+    const b=Object.assign({}, body);
+    if(c.branch) b.branch=c.branch;        // 写入时分支放请求体（Gitee 规范）
+    opt.body=JSON.stringify(b);
+  }
   const r=await fetch(url,opt);
   if(r.status===404) return {notfound:true};
   if(!r.ok){ let m=''; try{m=(await r.json()).message;}catch(e){} throw new Error(m||('Gitee '+r.status)); }
@@ -597,7 +602,7 @@ async function ghApi(path, method, body){
 }
 async function pushCloud(){
   const c=getCfg();
-  if(!c.owner||!c.repo||!c.token) return;
+  if(!c.owner||!c.repo||!c.token){ toast('请先在左下角「同步设置」里填写 Gitee 信息'); openSyncSettings(); return; }
   setSync('sync','同步中…');
   try{
     let sha=null;
@@ -611,7 +616,7 @@ async function pushCloud(){
 }
 async function pullCloud(){
   const c=getCfg();
-  if(!c.owner||!c.repo||!c.token){ toast('请先配置 GitHub 同步'); openSyncSettings(); return; }
+  if(!c.owner||!c.repo||!c.token){ toast('请先配置 Gitee 同步设置'); openSyncSettings(); return; }
   setSync('sync','拉取中…');
   try{
     const cur=await ghApi('data.json','GET');
