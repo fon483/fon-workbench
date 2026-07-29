@@ -501,6 +501,32 @@ function getCfg(){ try{ return JSON.parse(localStorage.getItem(CK))||{}; }catch(
 function setCfg(c){ localStorage.setItem(CK, JSON.stringify(c)); }
 function b64enc(s){ return btoa(unescape(encodeURIComponent(s))); }
 function b64dec(s){ return decodeURIComponent(escape(atob(s))); }
+/* 客户端加密（AES-GCM + PBKDF2）：仓库公开也能保证云端数据仅你可见 */
+async function deriveKey(pass, salt){
+  const enc=new TextEncoder();
+  const km=await crypto.subtle.importKey('raw', enc.encode(pass), undefined, false, ['deriveKey']);
+  return crypto.subtle.deriveKey({name:'PBKDF2',salt:salt,iterations:100000,hash:'SHA-256'}, km, {name:'AES-GCM',length:256}, false, ['encrypt','decrypt']);
+}
+async function encryptText(plain, pass){
+  const enc=new TextEncoder();
+  const salt=crypto.getRandomValues(new Uint8Array(16));
+  const iv=crypto.getRandomValues(new Uint8Array(12));
+  const key=await deriveKey(pass, salt);
+  const ct=await crypto.subtle.encrypt({name:'AES-GCM', iv}, key, enc.encode(plain));
+  const out=new Uint8Array(28+ct.byteLength);
+  out.set(salt,0); out.set(iv,16); out.set(new Uint8Array(ct),28);
+  let bin=''; for(let i=0;i<out.length;i++) bin+=String.fromCharCode(out[i]);
+  return 'ENC1:'+btoa(bin);
+}
+async function decryptText(wrapped, pass){
+  if(!wrapped.startsWith('ENC1:')) return wrapped;
+  const bin=atob(wrapped.slice(5)); const bytes=new Uint8Array(bin.length);
+  for(let i=0;i<bin.length;i++) bytes[i]=bin.charCodeAt(i);
+  const salt=bytes.slice(0,16), iv=bytes.slice(16,28), ct=bytes.slice(28);
+  const key=await deriveKey(pass, salt);
+  const pt=await crypto.subtle.decrypt({name:'AES-GCM', iv}, key, ct);
+  return new TextDecoder().decode(pt);
+}
 function timeAgo(ts){ if(!ts) return ''; const s=Math.floor((Date.now()-ts)/1000); if(s<60)return'刚刚'; if(s<3600)return Math.floor(s/60)+'分钟前'; if(s<86400)return Math.floor(s/3600)+'小时前'; return Math.floor(s/86400)+'天前'; }
 function setSync(cls,txt){ const d=$('#syncDot'),t=$('#syncTxt'); if(!d)return; d.className='sync-dot'+(cls?(' '+cls):''); t.textContent=txt; }
 let _pushTimer=null;
@@ -523,7 +549,9 @@ async function pushCloud(){
   try{
     let sha=null;
     try{ const cur=await ghApi('data.json','GET'); if(cur&&cur.sha) sha=cur.sha; }catch(e){}
-    const content=b64enc(JSON.stringify(store));
+    let payload=JSON.stringify(store);
+    if(c.pass){ payload=await encryptText(payload, c.pass); }
+    const content=b64enc(payload);
     await ghApi('data.json','PUT',{message:'FON sync '+new Date().toLocaleString(),content,sha:sha||undefined});
     c.lastSync=Date.now(); setCfg(c); setSync('ok','已同步 · '+timeAgo(c.lastSync));
   }catch(e){ setSync('err','同步失败：'+(e.message||e)); }
@@ -535,7 +563,12 @@ async function pullCloud(){
   try{
     const cur=await ghApi('data.json','GET');
     if(cur.notfound){ setSync('ok','云端暂无数据'); return; }
-    const data=JSON.parse(b64dec(cur.content));
+    let raw=b64dec(cur.content);
+    if(raw.startsWith('ENC1:')){
+      if(!c.pass){ throw new Error('云端数据已加密，请在「同步设置」中填写加密密码'); }
+      raw=await decryptText(raw, c.pass);
+    }
+    const data=JSON.parse(raw);
     store=data; save(); render();
     c.lastSync=Date.now(); setCfg(c); setSync('ok','已同步 · '+timeAgo(c.lastSync));
     toast('已从云端拉取最新数据');
@@ -554,12 +587,14 @@ function openSyncSettings(){
   box.innerHTML=`<h3>☁️ 云同步设置（GitHub）</h3>
   <div class="save-hint" style="text-align:left;margin:4px 0 12px;line-height:1.7">
     数据同步到你的 GitHub 仓库（<b>data.json</b>），手机与电脑登录同一仓库即互通。<br>
-    需准备：① 一个 GitHub 仓库（建议公开）② 一个仅授权该仓库的 <b>Fine-grained PAT</b>。
+    需准备：① 一个 GitHub 仓库（公开，免费版 Pages 不支持私有仓库）② 一个仅授权该仓库的 <b>PAT</b>。担心隐私请填写下方「加密密码」。
   </div>
   <div class="field"><label>GitHub 用户名 / 组织名</label><input id="sc_owner" value="${esc(c.owner||'')}" placeholder="如 octocat"></div>
   <div class="field"><label>仓库名</label><input id="sc_repo" value="${esc(c.repo||'')}" placeholder="如 fon-workbench"></div>
   <div class="field"><label>分支</label><input id="sc_branch" value="${esc(c.branch||'main')}" placeholder="main"></div>
   <div class="field"><label>Access Token（PAT）</label><input id="sc_token" type="password" value="${esc(c.token||'')}" placeholder="ghp_... 或 github_pat_..."></div>
+  <div class="field"><label>加密密码（强烈推荐）</label><input id="sc_pass" type="password" value="${esc(c.pass||'')}" placeholder="设一个密码，云端数据将加密存储"></div>
+  <div class="save-hint" style="font-size:11px;margin:-4px 0 2px;color:var(--muted)">⚠️ 免费版 GitHub Pages 不支持私有仓库，故仓库是公开的。填写此密码后，云端 <b>data.json</b> 会以密文保存，他人即使看到也只是乱码。密码仅存你本机，<b>忘了将无法恢复数据</b>。</div>
   <div class="field" style="display:flex;align-items:center;gap:8px">
     <input type="checkbox" id="sc_auto" ${c.auto?'checked':''} style="width:16px;height:16px;accent-color:var(--pink-deep)">
     <label style="margin:0">自动同步（本地改动后自动上传到云）</label>
@@ -581,6 +616,7 @@ function syncSaveSettings(){
     repo:$('#sc_repo').value.trim(),
     branch:$('#sc_branch').value.trim()||'main',
     token:$('#sc_token').value.trim(),
+    pass:$('#sc_pass').value,
     auto:$('#sc_auto').checked,
     lastSync:getCfg().lastSync||null
   };
