@@ -1423,22 +1423,35 @@ function handleFiles(files){
 }
 function loadSheetJS(cb){
   if(window.XLSX) return cb();
+  /* 优先加载同域名(托管在 github.io 的)本地副本，国内必通；失败再回退境外 CDN */
+  const sources = [
+    './xlsx.full.min.js',
+    'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js',
+    'https://unpkg.com/xlsx@0.18.5/dist/xlsx.full.min.js',
+    'https://cdn.bootcdn.net/ajax/libs/xlsx/0.18.5/xlsx.full.min.js'
+  ];
+  let i = 0;
+  function tryLoad(){
+    if(i >= sources.length){ toast('Excel 解析组件加载失败（需联网），请改用 CSV 或粘贴文本'); return; }
+    const src = sources[i++];
+    const s = document.createElement('script');
+    s.src = src;
+    s.onload = cb;
+    s.onerror = tryLoad;
+    document.head.appendChild(s);
+  }
   toast('正在加载 Excel 解析组件…');
-  const s = document.createElement('script');
-  s.src = 'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js';
-  s.onload = cb;
-  s.onerror = ()=>toast('组件加载失败（需联网），请改用 CSV 或粘贴文本');
-  document.head.appendChild(s);
+  tryLoad();
 }
 function parseTable(text){
   const rows = text.split(/\r?\n/).map(r=>r.split(/[,\t]/).map(c=>c.replace(/^"|"$/g,'').trim())).filter(r=>r.some(c=>c));
   if(rows.length<2){ /* 无表头结构，按纯文本解析 */ const list=parseTalentText(text); if(list.length){showParsePreview(list,'文档解析结果');}else toast('未识别到有效数据'); return; }
-  const head = rows[0];
-  const idx = key => head.findIndex(h=>key.some(k=>h.includes(k)));
-  const iName=idx(['昵称','姓名','名称','达人']), iPlat=idx(['平台']), iType=idx(['类型','形式']),
-        iPid=idx(['平台号','账号号','抖音号','快手号','视频号','ID','账号']),
+  const head = rows[0].map(h=>String(h||'').toLowerCase());
+  const idx = key => head.findIndex(h=>key.some(k=>h.includes(String(k).toLowerCase())));
+  const iName=idx(['昵称','姓名','名称','名字','达人']), iPlat=idx(['平台']), iType=idx(['类型','形式']),
+        iPid=idx(['平台号','账号号','抖音号','快手号','视频号','id','账号']),
         iContact=idx(['联系','微信','电话','手机']), iFans=idx(['粉丝']), iPrice=idx(['报价','价格','费用','坑位']),
-        iOrg=idx(['机构','对接','MCN']), iNote=idx(['备注','说明','风格']), iStatus=idx(['状态','合作']);
+        iOrg=idx(['机构','对接','mcn']), iNote=idx(['备注','说明','风格']), iStatus=idx(['状态','合作']);
   if(iName<0){ const list=parseTalentText(text); if(list.length){showParsePreview(list,'文档解析结果');}else toast('未找到「昵称」列，请检查表头'); return; }
   const list = rows.slice(1).filter(r=>r[iName]).map(r=>({
     name:r[iName]||'未命名达人',
