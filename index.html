@@ -127,6 +127,8 @@ input,textarea,select{font-family:inherit;font-size:14px;color:var(--text);outli
 .item-ico{font-size:16px;line-height:1.5;flex-shrink:0}
 .item-name{font-size:14.5px;font-weight:600;line-height:1.5;flex:1;min-width:0;word-break:break-all}
 .item-note{font-size:12.5px;font-weight:400;color:var(--muted)}
+.item-cat{font-size:11px;color:var(--muted);margin-left:6px;background:var(--pink-bg,#f3f9fb);border:1px solid var(--pink-line,#dceaf0);border-radius:10px;padding:1px 7px}
+.pill-btn.mini{padding:4px 10px;font-size:12px;flex:none}
 .item-sub{font-size:13px;color:#557;margin:4px 0 0 34px;line-height:1.5}
 .item-name.is-sentence{font-style:italic;color:#2b6f8c}
 .spk{
@@ -509,6 +511,142 @@ function load(){
   try{ const raw = localStorage.getItem(KEY); if(raw) return JSON.parse(raw); }catch(e){}
   return null;
 }
+/* ================= 英语学习：内置实用词库（日常/职场/旅行/购物/餐饮/健康/情绪/数字/居家 + 常用短句） ================= */
+const WORDBANK = [
+  /* 日常交际 */
+  {word:"hello",mean:'你好',pos:'其他',type:'word',cat:'日常'},
+  {word:"thanks",mean:'谢谢',pos:'其他',type:'word',cat:'日常'},
+  {word:"sorry",mean:'抱歉；对不起',pos:'其他',type:'word',cat:'日常'},
+  {word:"please",mean:'请',pos:'副词',type:'word',cat:'日常'},
+  {word:"help",mean:'帮助；帮忙',pos:'动词',type:'word',cat:'日常'},
+  {word:"friend",mean:'朋友',pos:'名词',type:'word',cat:'日常'},
+  {word:"family",mean:'家人；家庭',pos:'名词',type:'word',cat:'日常'},
+  {word:"water",mean:'水',pos:'名词',type:'word',cat:'日常'},
+  {word:"time",mean:'时间',pos:'名词',type:'word',cat:'日常'},
+  {word:"money",mean:'钱',pos:'名词',type:'word',cat:'日常'},
+  /* 职场工作 */
+  {word:"meeting",mean:'会议',pos:'名词',type:'word',cat:'职场'},
+  {word:"project",mean:'项目',pos:'名词',type:'word',cat:'职场'},
+  {word:"deadline",mean:'截止日期',pos:'名词',type:'word',cat:'职场'},
+  {word:"report",mean:'报告',pos:'名词',type:'word',cat:'职场'},
+  {word:"email",mean:'电子邮件',pos:'名词',type:'word',cat:'职场'},
+  {word:"schedule",mean:'日程；安排',pos:'名词',type:'word',cat:'职场'},
+  {word:"feedback",mean:'反馈',pos:'名词',type:'word',cat:'职场'},
+  {word:"goal",mean:'目标',pos:'名词',type:'word',cat:'职场'},
+  {word:"team",mean:'团队',pos:'名词',type:'word',cat:'职场'},
+  {word:"boss",mean:'老板；上司',pos:'名词',type:'word',cat:'职场'},
+  {word:"salary",mean:'薪水；工资',pos:'名词',type:'word',cat:'职场'},
+  {word:"vacation",mean:'假期',pos:'名词',type:'word',cat:'职场'},
+  /* 旅行出行 */
+  {word:"airport",mean:'机场',pos:'名词',type:'word',cat:'旅行'},
+  {word:"passport",mean:'护照',pos:'名词',type:'word',cat:'旅行'},
+  {word:"ticket",mean:'票',pos:'名词',type:'word',cat:'旅行'},
+  {word:"hotel",mean:'酒店；旅馆',pos:'名词',type:'word',cat:'旅行'},
+  {word:"map",mean:'地图',pos:'名词',type:'word',cat:'旅行'},
+  {word:"luggage",mean:'行李',pos:'名词',type:'word',cat:'旅行'},
+  {word:"train",mean:'火车',pos:'名词',type:'word',cat:'旅行'},
+  {word:"station",mean:'车站',pos:'名词',type:'word',cat:'旅行'},
+  {word:"trip",mean:'旅行；行程',pos:'名词',type:'word',cat:'旅行'},
+  {word:"tourist",mean:'游客',pos:'名词',type:'word',cat:'旅行'},
+  /* 购物消费 */
+  {word:"price",mean:'价格',pos:'名词',type:'word',cat:'购物'},
+  {word:"cheap",mean:'便宜的',pos:'形容词',type:'word',cat:'购物'},
+  {word:"expensive",mean:'昂贵的',pos:'形容词',type:'word',cat:'购物'},
+  {word:"discount",mean:'折扣',pos:'名词',type:'word',cat:'购物'},
+  {word:"size",mean:'尺码；尺寸',pos:'名词',type:'word',cat:'购物'},
+  {word:"color",mean:'颜色',pos:'名词',type:'word',cat:'购物'},
+  {word:"fashion",mean:'时尚',pos:'名词',type:'word',cat:'购物'},
+  {word:"supermarket",mean:'超市',pos:'名词',type:'word',cat:'购物'},
+  {word:"receipt",mean:'收据；小票',pos:'名词',type:'word',cat:'购物'},
+  {word:"customer",mean:'顾客',pos:'名词',type:'word',cat:'购物'},
+  /* 餐饮美食 */
+  {word:"breakfast",mean:'早餐',pos:'名词',type:'word',cat:'餐饮'},
+  {word:"lunch",mean:'午餐',pos:'名词',type:'word',cat:'餐饮'},
+  {word:"dinner",mean:'晚餐',pos:'名词',type:'word',cat:'餐饮'},
+  {word:"delicious",mean:'美味的',pos:'形容词',type:'word',cat:'餐饮'},
+  {word:"hungry",mean:'饥饿的',pos:'形容词',type:'word',cat:'餐饮'},
+  {word:"menu",mean:'菜单',pos:'名词',type:'word',cat:'餐饮'},
+  {word:"order",mean:'点餐；订单',pos:'名词',type:'word',cat:'餐饮'},
+  {word:"coffee",mean:'咖啡',pos:'名词',type:'word',cat:'餐饮'},
+  {word:"tea",mean:'茶',pos:'名词',type:'word',cat:'餐饮'},
+  {word:"vegetable",mean:'蔬菜',pos:'名词',type:'word',cat:'餐饮'},
+  {word:"fruit",mean:'水果',pos:'名词',type:'word',cat:'餐饮'},
+  {word:"taste",mean:'味道；品尝',pos:'名词',type:'word',cat:'餐饮'},
+  /* 健康生活 */
+  {word:"healthy",mean:'健康的',pos:'形容词',type:'word',cat:'健康'},
+  {word:"exercise",mean:'锻炼；运动',pos:'名词',type:'word',cat:'健康'},
+  {word:"sleep",mean:'睡觉',pos:'动词',type:'word',cat:'健康'},
+  {word:"doctor",mean:'医生',pos:'名词',type:'word',cat:'健康'},
+  {word:"medicine",mean:'药',pos:'名词',type:'word',cat:'健康'},
+  {word:"hospital",mean:'医院',pos:'名词',type:'word',cat:'健康'},
+  /* 情绪感受 */
+  {word:"happy",mean:'开心的',pos:'形容词',type:'word',cat:'情绪'},
+  {word:"sad",mean:'伤心的',pos:'形容词',type:'word',cat:'情绪'},
+  {word:"angry",mean:'生气的',pos:'形容词',type:'word',cat:'情绪'},
+  {word:"excited",mean:'兴奋的',pos:'形容词',type:'word',cat:'情绪'},
+  {word:"nervous",mean:'紧张的',pos:'形容词',type:'word',cat:'情绪'},
+  {word:"worried",mean:'担心的',pos:'形容词',type:'word',cat:'情绪'},
+  {word:"calm",mean:'平静的',pos:'形容词',type:'word',cat:'情绪'},
+  {word:"proud",mean:'自豪的',pos:'形容词',type:'word',cat:'情绪'},
+  {word:"lonely",mean:'孤独的',pos:'形容词',type:'word',cat:'情绪'},
+  {word:"confident",mean:'自信的',pos:'形容词',type:'word',cat:'情绪'},
+  /* 数字·时间·颜色 */
+  {word:"number",mean:'数字',pos:'名词',type:'word',cat:'数字'},
+  {word:"minute",mean:'分钟',pos:'名词',type:'word',cat:'数字'},
+  {word:"hour",mean:'小时',pos:'名词',type:'word',cat:'数字'},
+  {word:"week",mean:'周；星期',pos:'名词',type:'word',cat:'数字'},
+  {word:"month",mean:'月',pos:'名词',type:'word',cat:'数字'},
+  {word:"year",mean:'年',pos:'名词',type:'word',cat:'数字'},
+  {word:"red",mean:'红色',pos:'名词',type:'word',cat:'数字'},
+  {word:"blue",mean:'蓝色',pos:'名词',type:'word',cat:'数字'},
+  {word:"green",mean:'绿色',pos:'名词',type:'word',cat:'数字'},
+  {word:"black",mean:'黑色',pos:'名词',type:'word',cat:'数字'},
+  {word:"white",mean:'白色',pos:'名词',type:'word',cat:'数字'},
+  {word:"today",mean:'今天',pos:'副词',type:'word',cat:'数字'},
+  {word:"tomorrow",mean:'明天',pos:'副词',type:'word',cat:'数字'},
+  {word:"yesterday",mean:'昨天',pos:'副词',type:'word',cat:'数字'},
+  /* 居家·日常动作 */
+  {word:"clean",mean:'打扫；干净的',pos:'动词',type:'word',cat:'居家'},
+  {word:"cook",mean:'做饭；烹饪',pos:'动词',type:'word',cat:'居家'},
+  {word:"wash",mean:'洗',pos:'动词',type:'word',cat:'居家'},
+  {word:"open",mean:'打开',pos:'动词',type:'word',cat:'居家'},
+  {word:"close",mean:'关闭',pos:'动词',type:'word',cat:'居家'},
+  {word:"buy",mean:'买',pos:'动词',type:'word',cat:'居家'},
+  {word:"sell",mean:'卖',pos:'动词',type:'word',cat:'居家'},
+  {word:"read",mean:'读；阅读',pos:'动词',type:'word',cat:'居家'},
+  {word:"write",mean:'写',pos:'动词',type:'word',cat:'居家'},
+  {word:"learn",mean:'学习',pos:'动词',type:'word',cat:'居家'},
+  {word:"teach",mean:'教',pos:'动词',type:'word',cat:'居家'},
+  {word:"understand",mean:'理解；明白',pos:'动词',type:'word',cat:'居家'},
+  {word:"remember",mean:'记得',pos:'动词',type:'word',cat:'居家'},
+  {word:"forget",mean:'忘记',pos:'动词',type:'word',cat:'居家'},
+  {word:"think",mean:'思考；认为',pos:'动词',type:'word',cat:'居家'},
+  {word:"feel",mean:'感觉',pos:'动词',type:'word',cat:'居家'},
+  {word:"need",mean:'需要',pos:'动词',type:'word',cat:'居家'},
+  {word:"want",mean:'想要',pos:'动词',type:'word',cat:'居家'},
+  /* 常用短句 */
+  {word:"How are you today?",mean:'你今天好吗？',pos:'句子',type:'sentence',cat:'短句'},
+  {word:"Nice to meet you.",mean:'很高兴认识你。',pos:'句子',type:'sentence',cat:'短句'},
+  {word:"Thank you very much.",mean:'非常感谢你。',pos:'句子',type:'sentence',cat:'短句'},
+  {word:"I don't understand.",mean:'我听不懂。',pos:'句子',type:'sentence',cat:'短句'},
+  {word:"Could you repeat that, please?",mean:'你能重复一遍吗？',pos:'句子',type:'sentence',cat:'短句'},
+  {word:"Where is the restroom?",mean:'洗手间在哪里？',pos:'句子',type:'sentence',cat:'短句'},
+  {word:"How much does it cost?",mean:'这个多少钱？',pos:'句子',type:'sentence',cat:'短句'},
+  {word:"I would like a cup of coffee.",mean:'我想要一杯咖啡。',pos:'句子',type:'sentence',cat:'短句'},
+  {word:"What time is it now?",mean:'现在几点了？',pos:'句子',type:'sentence',cat:'短句'},
+  {word:"I'm lost, can you help me?",mean:'我迷路了，能帮我吗？',pos:'句子',type:'sentence',cat:'短句'},
+  {word:"Could I have the bill, please?",mean:'请给我账单好吗？',pos:'句子',type:'sentence',cat:'短句'},
+  {word:"Have a nice day!",mean:'祝你今天愉快！',pos:'句子',type:'sentence',cat:'短句'},
+  {word:"See you tomorrow.",mean:'明天见。',pos:'句子',type:'sentence',cat:'短句'},
+  {word:"I'm looking for a gift.",mean:'我在找一份礼物。',pos:'句子',type:'sentence',cat:'短句'},
+  {word:"Is there a discount?",mean:'有折扣吗？',pos:'句子',type:'sentence',cat:'短句'},
+  {word:"Can you speak slowly?",mean:'你能说慢一点吗？',pos:'句子',type:'sentence',cat:'短句'},
+  {word:"I need to catch a train.",mean:'我得赶火车。',pos:'句子',type:'sentence',cat:'短句'},
+  {word:"Let's take a break.",mean:'我们休息一下吧。',pos:'句子',type:'sentence',cat:'短句'},
+  {word:"What do you recommend?",mean:'你推荐什么？',pos:'句子',type:'sentence',cat:'短句'},
+  {word:"I'll think about it.",mean:'我会考虑一下。',pos:'句子',type:'sentence',cat:'短句'}
+];
+
 function seed(){
   const t = today();
   const y1 = dstr(new Date(Date.now()-864e5));
@@ -557,33 +695,9 @@ function seed(){
       {id:uid(),name:'一口甜甜圈',platform:'视频号',platformId:'yikoutiantianquan',type:'短视频',contact:'wx: ttq2023',fans:'23万',fansTime:y2,price:'单条视频 ¥2500',org:'',status:'未合作',note:'美食探店类，画风清新，报价可谈。',created:y2}
     ],
     eng:{
-      words:[
-        {id:uid(),word:'serendipity',mean:'意外发现珍宝的运气；机缘巧合',pos:'名词',type:'word',inBook:true,mastered:false,date:t},
-        {id:uid(),word:'meticulous',mean:'一丝不苟的；注重细节的',pos:'形容词',type:'word',inBook:false,mastered:false,date:t},
-        {id:uid(),word:'collaborate',mean:'合作；协作',pos:'动词',type:'word',inBook:true,mastered:false,date:y1},
-        {id:uid(),word:'in a nutshell',mean:'简而言之',pos:'词组',type:'word',inBook:true,mastered:false,date:y2},
-        {id:uid(),word:'resilient',mean:'有韧性的；能迅速恢复的',pos:'形容词',type:'word',inBook:true,mastered:false,date:t},
-        {id:uid(),word:'efficiency',mean:'效率；效能',pos:'名词',type:'word',inBook:true,mastered:false,date:y1},
-        {id:uid(),word:'negotiate',mean:'谈判；协商；商定',pos:'动词',type:'word',inBook:false,mastered:false,date:t},
-        {id:uid(),word:'opportunity',mean:'机会；时机',pos:'名词',type:'word',inBook:true,mastered:false,date:y2},
-        {id:uid(),word:'perspective',mean:'观点；视角；看法',pos:'名词',type:'word',inBook:false,mastered:false,date:t},
-        {id:uid(),word:'prioritize',mean:'按重要性排序；优先处理',pos:'动词',type:'word',inBook:true,mastered:false,date:y1},
-        {id:uid(),word:'sustainable',mean:'可持续的；能长久维持的',pos:'形容词',type:'word',inBook:false,mastered:false,date:t},
-        {id:uid(),word:'transparent',mean:'透明的；明晰坦率的',pos:'形容词',type:'word',inBook:true,mastered:false,date:y2},
-        {id:uid(),word:'leverage',mean:'充分利用；杠杆；影响力',pos:'动词',type:'word',inBook:false,mastered:false,date:t},
-        {id:uid(),word:'breakthrough',mean:'突破；重大进展',pos:'名词',type:'word',inBook:true,mastered:false,date:y1},
-        {id:uid(),word:'anticipate',mean:'预期；预料；提前准备',pos:'动词',type:'word',inBook:false,mastered:false,date:t},
-        {id:uid(),word:'Practice makes perfect.',mean:'熟能生巧。',pos:'句子',type:'sentence',inBook:true,mastered:false,date:t},
-        {id:uid(),word:'Where there is a will, there is a way.',mean:'有志者事竟成。',pos:'句子',type:'sentence',inBook:true,mastered:false,date:y1},
-        {id:uid(),word:'Could you please speak a little slower?',mean:'您能说慢一点吗？',pos:'句子',type:'sentence',inBook:false,mastered:false,date:y2},
-        {id:uid(),word:'Let us schedule a meeting for next Monday.',mean:'我们约下周一开个会吧。',pos:'句子',type:'sentence',inBook:true,mastered:false,date:t},
-        {id:uid(),word:'I really appreciate your help.',mean:'我非常感谢你的帮助。',pos:'句子',type:'sentence',inBook:true,mastered:false,date:y1},
-        {id:uid(),word:'Could you send me the details by email?',mean:'你能把详情用邮件发给我吗？',pos:'句子',type:'sentence',inBook:false,mastered:false,date:t},
-        {id:uid(),word:'We need to find a win-win solution.',mean:'我们需要找一个双赢的方案。',pos:'句子',type:'sentence',inBook:true,mastered:false,date:y2},
-        {id:uid(),word:'Quality is more important than quantity.',mean:'质量比数量更重要。',pos:'句子',type:'sentence',inBook:false,mastered:false,date:t},
-        {id:uid(),word:'Do not put off till tomorrow what you can do today.',mean:'今日事今日毕。',pos:'句子',type:'sentence',inBook:true,mastered:false,date:y1}
-      ],
-      checkins:{ [y1]:{add:1,rev:2}, [y2]:{add:1,rev:0} }
+      words: WORDBANK.slice(0,50).map((b,i)=>({id:uid(),word:b.word,mean:b.mean,pos:b.pos,type:b.type,inBook:true,mastered:false,date: i<8 ? t : (i%2? y1 : y2), cat:b.cat})),
+      lastNew:'',
+      checkins:{ [y1]:{add:8,rev:10}, [y2]:{add:6,rev:5} }
     }
   };
 }
@@ -756,6 +870,7 @@ async function initSync(){
     setSync('ok','已连接 · '+(c.lastSync?timeAgo(c.lastSync):'未同步'));
     if(c.auto){ await pullCloud(); }
   } else { setSync('','未开启云同步'); }
+  engAutoUpdate();                              /* 每日自动补充新词（独立于云同步，离线也生效） */
 }
 function openSyncSettings(){
   const c=getCfg();
@@ -1280,7 +1395,7 @@ function renderEngToday(){
       <span class="item-ico">📖</span>
       <button class="spk" title="朗读发音" onclick="speakWord('${w.id}')">🔊</button>
       <span class="item-name ${w.type==='sentence'?'is-sentence':''}">${esc(w.word)}${w.type==='sentence'?'':`<span class="item-note">（${esc(w.mean)}）</span>`}</span>
-      <span class="tag tag-pos">${w.type==='sentence'?'句子':esc(w.pos)}</span>
+      <span class="tag tag-pos">${w.type==='sentence'?'句子':esc(w.pos)}</span>${w.cat?`<span class="item-cat">${esc(w.cat)}</span>`:''}
     </div>
     ${w.type==='sentence'?`<div class="item-sub">${esc(w.mean)}</div>`:''}
     <div class="item-btns">
@@ -1297,9 +1412,10 @@ function renderEngToday(){
   return `
   <div class="card">
     <div class="sec">
-      <div class="sec-head"><span class="sec-ico">🆕</span><span class="sec-title">今日新单词</span><span class="sec-count">${news.length} 个</span></div>
+      <div class="sec-head"><span class="sec-ico">🆕</span><span class="sec-title">今日新单词</span><span class="sec-count">${news.length} 个</span><button class="pill-btn ghost mini" style="margin-left:auto" onclick="importWords(10)">📥 导入新词</button></div>
       ${news.length?news.map(w=>wordRow(w,false)).join(''):emptyHtml('🐣','今天还没有录入新单词')}
       <div style="text-align:center;margin-top:10px"><button class="pill-btn ghost" onclick="addWord()">＋ 添加单词 / 句子</button></div>
+      <div class="save-hint" style="text-align:center;margin-top:8px">内置实用词库共 <b>${WORDBANK.length}</b> 词 · 已学 <b>${store.eng.words.length}</b> 词 · 每天自动新增 5 词 📚（也可点上方「📥 导入新词」手动补）</div>
     </div>
     <div class="sec">
       <div class="sec-head"><span class="sec-ico">🔁</span><span class="sec-title">今日复习生词</span><span class="sec-count">${reviews.filter(w=>!w.mastered).length} 个待复习</span></div>
@@ -1339,7 +1455,7 @@ function renderEngHist(){
       ${ws.length?ws.map(w=>`<div class="item"><div class="item-main"><span class="item-ico">📖</span>
         <button class="spk" title="朗读发音" onclick="speakWord('${w.id}')">🔊</button>
         <span class="item-name ${w.type==='sentence'?'is-sentence':''}">${esc(w.word)}${w.type==='sentence'?'':`<span class="item-note">（${esc(w.mean)}）</span>`}</span>
-        <span class="tag tag-pos">${w.type==='sentence'?'句子':esc(w.pos)}</span></div>
+        <span class="tag tag-pos">${w.type==='sentence'?'句子':esc(w.pos)}</span>${w.cat?`<span class="item-cat">${esc(w.cat)}</span>`:''}</div>
         ${w.type==='sentence'?`<div class="item-sub">${esc(w.mean)}</div>`:''}</div>`).join('')
         :emptyHtml('💭','当日打卡了复习，没有录入新单词')}
     </div>`;
@@ -1388,6 +1504,27 @@ function speakEn(text){
     u.lang='en-US'; u.rate=0.9; u.pitch=1;
     speechSynthesis.speak(u);
   }catch(e){ toast('语音播报失败'); }
+}
+
+/* 英语：内置词库导入 / 每日自动更新 */
+function importWords(n, silent){
+  if(!store.eng) return 0;
+  let added=0;
+  for(const b of WORDBANK){
+    if(added>=n) break;
+    if(store.eng.words.some(w=>w.word===b.word)) continue;
+    store.eng.words.push({id:uid(),word:b.word,mean:b.mean,pos:b.pos,type:b.type,inBook:true,mastered:false,date:dstr(new Date()),cat:b.cat});
+    added++;
+  }
+  if(added>0){ store.eng.lastNew=dstr(new Date()); checkin('add'); save(); render(); if(!silent) toast('已导入 '+added+' 个新词 📚'); }
+  else if(!silent) toast('词库已全部学完，真厉害！🎉');
+  return added;
+}
+function engAutoUpdate(){
+  if(!store.eng) return;
+  const td=dstr(new Date());
+  if(store.eng.lastNew===td) return;            /* 今天已自动加过，避免重复 */
+  importWords(5, true);
 }
 
 /* ================= 模块5：达人资源库 ================= */
